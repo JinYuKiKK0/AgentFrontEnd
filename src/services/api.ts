@@ -27,13 +27,15 @@ interface StreamCallbacks {
  * 使用SSE发送消息到AI聊天接口并处理流式响应
  * @param prompt 用户输入的提示词
  * @param callbacks 包含onMessage, onError, onClose的回调对象
+ * @param chatId 会话ID，用于标识当前会话
  * @returns 返回一个包含close方法的对象，用于手动关闭SSE连接
  */
 export const sendMessageStream = (
   prompt: string,
-  callbacks: StreamCallbacks
+  callbacks: StreamCallbacks,
+  chatId: string
 ): { close: () => void } => {
-  const url = `${API_BASE_URL}/ai/chat?prompt=${encodeURIComponent(prompt)}`;
+  const url = `${API_BASE_URL}/ai/chat?prompt=${encodeURIComponent(prompt)}&chatId=${encodeURIComponent(chatId)}`;
   const eventSource = new EventSource(url);
 
   /**

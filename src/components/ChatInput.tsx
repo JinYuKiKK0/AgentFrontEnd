@@ -59,7 +59,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false }
   }, [input]);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+    <div className="w-full">
       <div className="relative">
         <textarea
           ref={textareaRef}
@@ -68,21 +68,28 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false }
           onKeyDown={handleKeyDown}
           placeholder="输入消息..."
           disabled={disabled}
-          className="w-full resize-none overflow-hidden outline-none py-2 px-3 max-h-[200px] pr-12 rounded-md border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
+          className="w-full resize-none overflow-hidden outline-none py-3 px-4 max-h-[200px] pr-14 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#343541] text-neutral-900 dark:text-neutral-100 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 dark:focus:ring-primary-900 transition-all text-[15px] placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
           rows={1}
           aria-label="聊天输入框"
         />
         <button
           onClick={handleSendMessage}
           disabled={!input.trim() || disabled}
-          className="absolute right-2 bottom-2 p-2 rounded-full bg-primary-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-700 transition-colors"
+          className="send-button absolute right-3 bottom-3"
           aria-label="发送消息"
         >
           <PaperAirplaneIcon className="h-5 w-5" />
         </button>
       </div>
-      <div className="text-xs text-gray-500 mt-2 px-2">
-        按 Enter 发送，Shift + Enter 换行
+      <div className="flex items-center justify-between mt-2 px-1">
+        <div className="text-xs text-neutral-500 dark:text-neutral-400">
+          按 <kbd className="px-1.5 py-0.5 bg-neutral-100 dark:bg-[#40414f] rounded text-neutral-600 dark:text-neutral-300 font-sans">Enter</kbd> 发送，<kbd className="px-1.5 py-0.5 bg-neutral-100 dark:bg-[#40414f] rounded text-neutral-600 dark:text-neutral-300 font-sans">Shift + Enter</kbd> 换行
+        </div>
+        {disabled && (
+          <div className="text-xs text-primary-600 dark:text-primary-400 animate-pulse-slow">
+            AI正在回复中...
+          </div>
+        )}
       </div>
     </div>
   );

@@ -39,13 +39,22 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "chatId",
+            "in": "query",
+            "description": "会话Id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
-              "text/html;charset=UTF-8": {
+              "text/event-stream;charset=UTF-8": {
                 "schema": {
                   "type": "array",
                   "items": {
