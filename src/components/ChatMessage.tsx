@@ -35,30 +35,36 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   return (
     <div
       className={cn(
-        'flex w-full items-end mb-4',
-        message.isUser ? 'justify-end pr-3' : 'justify-start pl-3'
+        'flex w-full mb-4',
+        // 用户消息靠右，AI 消息靠左但移除 items-end
+        message.isUser ? 'justify-end items-end pr-3' : 'justify-start pl-3'
       )}
     >
-      {!message.isUser && (
-        <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center mr-2 flex-shrink-0">
-          <span className="text-primary-700 dark:text-primary-400 text-sm font-medium">AI</span>
+      {/* 移除 AI 头像 */}
+      {/* {!message.isUser && (
+        // 使用 CSS 变量设置 AI 头像背景和文字颜色
+        <div className="w-8 h-8 rounded-full bg-[rgba(var(--primary-600),0.1)] flex items-center justify-center mr-2 flex-shrink-0">
+          <span className="text-[rgb(var(--primary-600))] text-sm font-medium">AI</span>
         </div>
-      )}
+      )} */}
       
+      {/* 调整消息容器样式 */}
       <div
         className={cn(
-          'px-4 py-3 max-w-[90%] md:max-w-[85%] lg:max-w-[75%]',
+          // 用户消息保留气泡样式，AI 消息移除气泡样式并调整 padding
           message.isUser
-            ? 'message-user'
-            : 'message-ai'
+            ? 'px-4 py-3 max-w-[90%] md:max-w-[85%] lg:max-w-[75%] message-user'
+            : 'py-3 w-full' // AI 消息移除 px-4, max-w, message-ai
         )}
       >
-        <div className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">
+        {/* 使用 CSS 变量设置消息内容颜色 */}
+        <div className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-[rgb(var(--message-text))] ">
           {message.content ? (
             message.isUser ? (
               message.content
             ) : (
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+              // 使用 CSS 变量设置 Markdown 样式
+              <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none prose-p:text-[rgb(var(--message-text))] prose-strong:text-[rgb(var(--message-text))] prose-code:text-[rgb(var(--message-text))] prose-headings:text-[rgb(var(--message-text))] prose-blockquote:text-[rgb(var(--message-text))] prose-a:text-[rgb(var(--primary-600))] hover:prose-a:text-[rgb(var(--primary-700))]">
                 <ReactMarkdown
                   // @ts-ignore - 忽略类型不兼容问题
                   remarkPlugins={[remarkGfm]}
@@ -67,9 +73,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                       const match = /language-(\w+)/.exec(className || '');
                       return !inline && match ? (
                         <SyntaxHighlighter
-                          style={oneDark}
+                          style={oneDark} // 保持代码高亮样式
                           language={match[1]}
                           PreTag="div"
+                          customStyle={{ background: 'rgb(var(--neutral-700))', borderRadius: '0.5rem', padding: '0.8rem' }} // 使用变量设置背景
+                          codeTagProps={{ style: { color: 'rgb(var(--neutral-100))' } }} // 使用变量设置代码颜色
                           {...props}
                         >
                           {String(children).replace(/\n$/, '')}
@@ -87,24 +95,20 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               </div>
             )
           ) : (
-            <span className="text-neutral-400 dark:text-neutral-500 italic">正在思考...</span>
+            // 使用 CSS 变量设置加载提示颜色
+            <span className="text-[rgba(var(--foreground-rgb),0.5)] italic">正在思考...</span>
           )}
         </div>
-        <div
-          className={cn(
-            'text-xs mt-1.5 flex justify-end',
-            message.isUser ? 'text-primary-100' : 'text-neutral-400 dark:text-neutral-500'
-          )}
-        >
-          {formattedTime}
-        </div>
+        
       </div>
       
-      {message.isUser && (
-        <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center ml-2 flex-shrink-0">
+      {/* 移除用户头像 */}
+      {/* {message.isUser && (
+        // 使用 CSS 变量设置用户头像背景和文字颜色
+        <div className="w-8 h-8 rounded-full bg-[rgb(var(--primary-600))] flex items-center justify-center ml-2 flex-shrink-0">
           <span className="text-white text-sm font-medium">我</span>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

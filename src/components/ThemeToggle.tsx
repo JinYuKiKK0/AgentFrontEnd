@@ -36,15 +36,14 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
 
   return (
     <button
-      onClick={handleToggleTheme}
-      className={`theme-toggle-btn ${className}`}
-      aria-label={currentTheme === 'light' ? '切换到深色模式' : '切换到浅色模式'}
-      title={currentTheme === 'light' ? '切换到深色模式' : '切换到浅色模式'}
+      onClick={handleToggleTheme} // 使用 handleToggleTheme 来更新状态
+      className={`p-2 rounded-md text-[rgb(var(--foreground-rgb))] hover:bg-[rgba(var(--foreground-rgb),0.1)] transition-colors duration-200 focus:outline-none ${className}`}
+      aria-label={currentTheme === 'dark' ? '切换到浅色模式' : '切换到深色模式'} // 使用 currentTheme
     >
-      {currentTheme === 'light' ? (
-        <MoonIcon className="h-5 w-5" />
-      ) : (
+      {currentTheme === 'dark' ? ( // 使用 currentTheme
         <SunIcon className="h-5 w-5" />
+      ) : (
+        <MoonIcon className="h-5 w-5" />
       )}
     </button>
   );

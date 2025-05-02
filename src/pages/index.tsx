@@ -126,75 +126,86 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-neutral-50 dark:bg-[#343541]">
+    // 使用 CSS 变量设置 body 背景
+    <div className="flex flex-col h-screen bg-[rgb(var(--background-rgb))] text-[rgb(var(--foreground-rgb))]" >
       <Head>
         <title>AI 聊天助手</title>
         <meta name="description" content="基于AI的智能聊天助手" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <header className="bg-white dark:bg-neutral-800 shadow-soft py-4 px-6 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto w-full flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Effective Agent</h1>
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-primary-600 dark:text-primary-400 font-medium">询问任何事情</div>
+      {/* 简化 Header - 更像 ChatGPT */}
+      <header className="bg-transparent py-3 px-4 sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto w-full flex items-center justify-between">
+          {/* 居中标题或留空，这里暂时保留标题 */}
+          {/* <h1 className="text-lg font-medium text-[rgb(var(--foreground-rgb))] opacity-80">ChatGPT</h1> */}
+          {/* 占位符，保持右侧按钮位置 */}
+          <div></div>
+          <div className="flex items-center">
             <ThemeToggle />
+            {/* 可以添加其他图标按钮，如新建聊天等 */}
           </div>
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden flex flex-col p-4 sm:p-6 max-w-4xl mx-auto w-full">
-        {/* 聊天容器 */}
-        <div className="flex-1 flex flex-col overflow-hidden chat-container mb-4">
-          {/* 聊天消息区域 */}
-          <div 
-            ref={chatContainerRef}
-            className="flex-1 overflow-y-auto py-6 px-2 sm:px-4 dark:bg-[#343541]"
-          >
-            {messages.length === 0 ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center p-6 max-w-md">
-                  <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-600 dark:text-primary-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <h2 className="text-2xl font-semibold text-neutral-800 dark:text-neutral-100 mb-6">有什么可以帮忙的？</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left max-w-sm mx-auto">
-                    <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-sm">
-                      <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">"如何使用React Hooks?"</p>
-                    </div>
-                    <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-sm">
-                      <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">"解释一下闭包的概念"</p>
-                    </div>
-                  </div>
-                </div>
+      {/* 调整 Main 布局以更像 ChatGPT */}
+      {/* 移除 overflow-hidden，让页面根元素处理滚动 */}
+      {/* 根据是否有消息动态添加 pb */}
+      <main className={`flex-1 flex flex-col pt-2 sm:pt-4 max-w-3xl mx-auto w-full min-h-0 ${messages.length > 0 ? 'pb-24 sm:pb-28' : 'pb-4'}`}>
+        {/* 聊天容器 - 根据是否有消息调整样式 */}
+        {/* 移除 flex-1 和 overflow-y-auto */}
+        <div
+          ref={chatContainerRef}
+          // 移除 justify-center，添加 pt-20
+          className={`py-6 px-2 sm:px-4 chat-container mb-4 ${messages.length === 0 ? 'flex flex-col flex-1 pt-20' : ''}`}
+        >
+          {messages.length === 0 ? (
+            // 移除 pb-32
+            <div className="p-6 flex flex-col">
+              {/* 给 h2 单独添加 text-center */} 
+              <h2 className="text-3xl font-semibold text-[rgb(var(--foreground-rgb))] mb-12 opacity-90 text-center">有什么可以帮忙的？</h2>
+              {/* 在空状态下，输入框显示在这里 */} 
+              <div className="w-full">
+                <ChatInput onSendMessage={handleSendMessage} disabled={loading} />
               </div>
-            ) : (
-              <div className="space-y-1">
-                {messages.map((message) => (
-                  <ChatMessage key={message.id} message={message} />
-                ))}
+            </div>
+          ) : (
+            // 显示聊天消息
+            <div className="space-y-1">
+              {messages.map((message) => (
+                <ChatMessage key={message.id} message={message} />
+              ))}
+            </div>
+          )}
+
+          {/* 加载指示器 - 仅在有消息时显示在消息列表下方 */}
+          {loading && messages.length > 0 && (
+            <div className="pl-3 mt-2">
+              <div className="typing-indicator">
+                <div className="w-2 h-2 bg-[rgb(var(--primary-600))] rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-[rgb(var(--primary-600))] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 bg-[rgb(var(--primary-600))] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
               </div>
-            )}
-            
-            {loading && (
-              <div className="pl-3 mt-2">
-                <div className="typing-indicator">
-                  <div className="w-2 h-2 bg-primary-400 rounded-full animate-pulse"></div>
-                  <div className="w-2 h-2 bg-primary-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                  <div className="w-2 h-2 bg-primary-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {/* 输入区域 - 固定在底部 */}
-          <div className="p-4 border-t border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#343541] rounded-b-xl">
-            <ChatInput onSendMessage={handleSendMessage} disabled={loading} />
+            </div>
+          )}
+        </div>
+
+        {/* 输入区域 - 移出 main，作为根 div 的子元素 (仅在有消息时) */}
+        {/* 删除这部分，将其移动到 main 外部的条件渲染中 */}
+      </main>
+
+      {/* 输入区域 - 仅在有消息时固定在页面底部 */}
+      {messages.length > 0 && (
+        <div className={`sticky bottom-0 w-full bg-[rgb(var(--background-rgb))] pt-2 pb-4 sm:pb-6 z-10 px-2 sm:px-4`}>
+          {/* 容器限制宽度并居中 */}
+          <div className="max-w-3xl mx-auto">
+            {/* 在空状态下限制输入框宽度 (这里不需要了，因为只在有消息时显示) */}
+            <div>
+              <ChatInput onSendMessage={handleSendMessage} disabled={loading} />
+            </div>
           </div>
         </div>
-      </main>
+      )}
     </div>
   );
 }
