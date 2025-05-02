@@ -58,13 +58,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         )}
       >
         {/* 使用 CSS 变量设置消息内容颜色 */}
-        <div className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-[rgb(var(--message-text))] ">
+        <div className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-[rgb(var(--foreground-rgb))] dark:text-[rgb(255,255,255)] ">
           {message.content ? (
             message.isUser ? (
               message.content
             ) : (
               // 使用 CSS 变量设置 Markdown 样式
-              <div className="prose prose-neutral dark:prose-invert max-w-none">
+              <div className="prose prose-neutral dark:prose-invert max-w-none text-[rgb(var(--foreground-rgb))]">
                 <ReactMarkdown
                   // @ts-ignore - 忽略类型不兼容问题
                   remarkPlugins={[remarkGfm]}
@@ -78,7 +78,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                           language={match[1]}
                           PreTag="div"
                           customStyle={{ background: 'rgb(var(--neutral-700))', borderRadius: '0.5rem', padding: '0.8rem' }} // 使用变量设置背景
-                          codeTagProps={{ style: { color: 'rgb(var(--neutral-100))' } }} // 使用变量设置代码颜色
+                          codeTagProps={{ style: { color: 'rgb(255,255,255)' } }} // 使用纯白色提高代码可读性
                           {...props}
                         >
                           {String(children).replace(/\n$/, '')}
@@ -97,7 +97,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             )
           ) : (
             // 使用 CSS 变量设置加载提示颜色
-            <span className="text-[rgba(var(--foreground-rgb),0.5)] italic">正在思考...</span>
+            <span className="text-[rgb(var(--foreground-rgb))] italic">正在思考...</span>
           )}
         </div>
         
