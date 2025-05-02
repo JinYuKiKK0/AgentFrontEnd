@@ -1,6 +1,8 @@
 @tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* 引入 Tailwind 组件类 */
+@import 'tailwindcss/components';
+/* 引入 Tailwind 工具类 */
+@import 'tailwindcss/utilities';
 
 :root {
   /* Light Theme - Closer to ChatGPT Light */
@@ -97,7 +99,8 @@ html {
 @layer components {
   .chat-container {
     /* Remove shadow and rounded corners from container, let messages handle it */
-    @apply shadow-none rounded-none;
+    box-shadow: none;
+    border-radius: 0;
     /* box-shadow: 0 6px 20px rgba(var(--shadow-color), var(--shadow-opacity)); */ /* Removed shadow */
   }
 

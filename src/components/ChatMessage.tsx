@@ -64,11 +64,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               message.content
             ) : (
               // 使用 CSS 变量设置 Markdown 样式
-              <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none prose-p:text-[rgb(var(--message-text))] prose-strong:text-[rgb(var(--message-text))] prose-code:text-[rgb(var(--message-text))] prose-headings:text-[rgb(var(--message-text))] prose-blockquote:text-[rgb(var(--message-text))] prose-a:text-[rgb(var(--primary-600))] hover:prose-a:text-[rgb(var(--primary-700))]">
+              <div className="prose prose-neutral dark:prose-invert max-w-none">
                 <ReactMarkdown
                   // @ts-ignore - 忽略类型不兼容问题
                   remarkPlugins={[remarkGfm]}
                   components={{
+                    // 保留代码块的高亮逻辑
                     code: ({ node, inline, className, children, ...props }: CodeProps) => {
                       const match = /language-(\w+)/.exec(className || '');
                       return !inline && match ? (

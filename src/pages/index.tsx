@@ -157,7 +157,8 @@ export default function Home() {
         <div
           ref={chatContainerRef}
           // 移除 justify-center，添加 pt-20
-          className={`py-6 px-2 sm:px-4 chat-container mb-4 ${messages.length === 0 ? 'flex flex-col flex-1 pt-20' : ''}`}
+          // 移除 mb-4
+          className={`py-6 px-2 sm:px-4 chat-container ${messages.length === 0 ? 'flex flex-col flex-1 pt-20' : ''}`}
         >
           {messages.length === 0 ? (
             // 移除 pb-32
@@ -196,10 +197,9 @@ export default function Home() {
 
       {/* 输入区域 - 仅在有消息时固定在页面底部 */}
       {messages.length > 0 && (
-        <div className={`sticky bottom-0 w-full bg-[rgb(var(--background-rgb))] pt-2 pb-4 sm:pb-6 z-10 px-2 sm:px-4`}>
+        <div className="fixed bottom-0 left-0 right-0 w-full bg-[rgb(var(--background-rgb))] pt-2 pb-4 sm:pb-6 z-30 px-2 sm:px-4">
           {/* 容器限制宽度并居中 */}
           <div className="max-w-3xl mx-auto">
-            {/* 在空状态下限制输入框宽度 (这里不需要了，因为只在有消息时显示) */}
             <div>
               <ChatInput onSendMessage={handleSendMessage} disabled={loading} />
             </div>
