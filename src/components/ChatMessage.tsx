@@ -27,10 +27,25 @@ interface ChatMessageProps {
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   // 格式化时间
-  const formattedTime = new Intl.DateTimeFormat('zh-CN', {
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(message.timestamp);
+  // 确保 timestamp 是一个 Date 对象
+  const timestampDate = typeof message.timestamp === 'string' 
+    ? new Date(message.timestamp) 
+    : message.timestamp;
+
+  let formattedTime = '--:--'; // 默认值，以防日期无效
+  try {
+    // 检查转换后的日期是否有效
+    if (timestampDate instanceof Date && !isNaN(timestampDate.getTime())) {
+      formattedTime = new Intl.DateTimeFormat('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(timestampDate);
+    } else {
+      console.warn('ChatMessage: Invalid timestamp received:', message.timestamp);
+    }
+  } catch (error) {
+    console.error('ChatMessage: Error formatting time:', error, message.timestamp);
+  }
 
   return (
     <div

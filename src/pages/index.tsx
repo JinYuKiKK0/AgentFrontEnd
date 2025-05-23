@@ -1,11 +1,27 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import ChatInput from '@/components/ChatInput';
 import ChatMessage from '@/components/ChatMessage';
 import ThemeToggle from '@/components/ThemeToggle';
-import { sendMessageStream } from '@/services/api';
-import { getSessionId } from '@/utils/sessionManager';
+import ConversationSidebar from '@/components/ConversationSidebar';
+import {
+  sendMessageStream,
+  getUserConversations,
+  createConversation,
+  deleteConversation,
+  ApiConversation,
+} from '@/services/api';
+import { logoutUser } from '@/services/userService';
+import { 
+  generateLocalId, 
+  getActiveConversationIdFromStorage, 
+  setActiveConversationIdInStorage,
+  clearActiveConversationIdFromStorage 
+} from '@/utils/sessionManager';
+import { getUserId, clearUserId } from '@/utils/user';
 import { initTheme } from '@/utils/themeManager';
+import { Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/router';
 
 /**
  * 聊天消息类型定义
@@ -17,195 +33,407 @@ export interface Message {
   timestamp: Date;
 }
 
+// 新增：用于存储每个会话消息的类型
+type ConversationMessages = Record<string, Message[]>;
+
+const MESSAGES_STORAGE_KEY = 'chatAppAllMessages'; // 新增 localStorage key
+
 /**
  * 主页组件 - 展示聊天界面
  */
 export default function Home() {
-  // 聊天消息列表状态
-  const [messages, setMessages] = useState<Message[]>([]);
-  // 加载状态
-  const [loading, setLoading] = useState(false);
-  // 聊天容器引用，用于自动滚动
+  const [messages, setMessages] = useState<ConversationMessages>(() => {
+    // 初始化时尝试从 localStorage 加载消息
+    if (typeof window !== 'undefined') {
+      const savedMessages = localStorage.getItem(MESSAGES_STORAGE_KEY);
+      if (savedMessages) {
+        try {
+          return JSON.parse(savedMessages);
+        } catch (error) {
+          console.error('解析localStorage中的消息失败:', error);
+          return {};
+        }
+      }
+    }
+    return {};
+  });
+  const [sendingMessage, setSendingMessage] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-
-  // 存储当前SSE连接的引用
   const eventSourceRef = useRef<{ close: () => void } | null>(null);
 
-  /**
-   * 处理消息发送（流式）
-   * @param content 用户输入的内容
-   */
-  const handleSendMessage = (content: string) => {
-    if (!content.trim() || loading) return;
+  const [conversations, setConversations] = useState<ApiConversation[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [userId, setUserIdState] = useState<string | null>(null);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isProcessingConversation, setIsProcessingConversation] = useState(false);
+  const router = useRouter();
 
-    // 如果存在上一个流式连接，先关闭它
+  // 获取当前活动会话的消息列表
+  const currentMessages = currentConversationId ? messages[currentConversationId] || [] : [];
+
+  useEffect(() => {
+    const uId = getUserId();
+    if (!uId) {
+      router.push('/login');
+      return;
+    }
+    setUserIdState(uId);
+    initTheme();
+
+    if (uId) {
+      loadConversations(uId);
+      const lastActiveId = getActiveConversationIdFromStorage();
+      if (lastActiveId) {
+        setCurrentConversationId(lastActiveId);
+      }
+    }
+  }, [router]);
+
+  // 当 messages 状态变化时，将其保存到 localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (currentConversationId) {
+      setActiveConversationIdInStorage(currentConversationId);
+      if (!messages[currentConversationId]) {
+        setMessages(prev => ({ ...prev, [currentConversationId]: [] }));
+      }
+    } else {
+      clearActiveConversationIdFromStorage();
+    }
+  }, [currentConversationId, messages]);
+
+  const loadConversations = useCallback(async (uid: string) => {
+    setIsLoadingConversations(true);
+    try {
+      const convs = await getUserConversations(uid);
+      convs.sort((a, b) => new Date(b.updateTime).getTime() - new Date(a.updateTime).getTime());
+      setConversations(convs);
+      
+      const lastActiveId = getActiveConversationIdFromStorage();
+      let activeIdToSet = null;
+
+      if (lastActiveId && convs.some(c => c.conversationId === lastActiveId)) {
+        activeIdToSet = lastActiveId;
+      } else if (convs.length > 0) {
+        activeIdToSet = convs[0].conversationId;
+      }
+
+      if (activeIdToSet && activeIdToSet !== currentConversationId) {
+        setCurrentConversationId(activeIdToSet);
+      } else if (!activeIdToSet && currentConversationId) {
+        setCurrentConversationId(null);
+      }
+
+    } catch (error) {
+      console.error('加载会话列表失败:', error);
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  }, [currentConversationId]);
+
+  const handleSelectConversation = (conversationId: string) => {
+    if (currentConversationId === conversationId || isProcessingConversation) return;
+    setCurrentConversationId(conversationId);
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+      setSendingMessage(false);
+    }
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  };
+
+  const handleCreateConversation = async () => {
+    if (!userId || isProcessingConversation) return;
+    setIsProcessingConversation(true);
+    try {
+      const newConversation = await createConversation({ userId, title: '新对话' });
+      setConversations((prev) => [newConversation, ...prev].sort((a, b) => new Date(b.updateTime).getTime() - new Date(a.updateTime).getTime()));
+      setMessages(prev => ({ ...prev, [newConversation.conversationId]: [] }));
+      setCurrentConversationId(newConversation.conversationId);
+      if (window.innerWidth < 768) {
+        setIsSidebarOpen(false);
+      }
+    } catch (error) {
+      console.error('创建新会话失败:', error);
+    } finally {
+      setIsProcessingConversation(false);
+    }
+  };
+
+  const handleDeleteConversation = async (conversationIdToDelete: string) => {
+    if (!userId || isProcessingConversation) return;
+    const isConfirmed = window.confirm('确定要删除此会话吗？此操作不可撤销。');
+    if (!isConfirmed) return;
+
+    setIsProcessingConversation(true);
+    try {
+      await deleteConversation(conversationIdToDelete);
+      const updatedConversations = conversations.filter(conv => conv.conversationId !== conversationIdToDelete);
+      setConversations(updatedConversations);
+      
+      setMessages(prev => {
+        const newMessages = { ...prev };
+        delete newMessages[conversationIdToDelete];
+        return newMessages;
+      });
+
+      if (currentConversationId === conversationIdToDelete) {
+        if (updatedConversations.length > 0) {
+          setCurrentConversationId(updatedConversations[0].conversationId);
+        } else {
+          setCurrentConversationId(null);
+        }
+      }
+    } catch (error) {
+      console.error('删除会话失败:', error);
+    } finally {
+      setIsProcessingConversation(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    const confirmLogout = window.confirm('您确定要登出吗？');
+    if (!confirmLogout) {
+      return;
+    }
+    try {
+      await logoutUser();
+      localStorage.removeItem('token');
+      localStorage.removeItem(MESSAGES_STORAGE_KEY);
+      clearActiveConversationIdFromStorage();
+      clearUserId();
+
+      setMessages({});
+      setConversations([]);
+      setCurrentConversationId(null);
+      setUserIdState(null);
+      
+      router.push('/login');
+    } catch (error) {
+      console.error('登出失败:', error);
+      alert('登出失败，请稍后重试。');
+    }
+  };
+
+  const handleSendMessage = async (content: string) => {
+    if (!content.trim() || sendingMessage || !userId) return;
+
+    let conversationToUse = currentConversationId;
+
+    if (!conversationToUse) {
+      if (isProcessingConversation) return;
+      setIsProcessingConversation(true);
+      try {
+        const newConv = await createConversation({ userId, title: content.substring(0, 30) });
+        setConversations(prev => [newConv, ...prev].sort((a, b) => new Date(b.updateTime).getTime() - new Date(a.updateTime).getTime()));
+        setMessages(prev => ({ ...prev, [newConv.conversationId]: [] }));
+        setCurrentConversationId(newConv.conversationId);
+        conversationToUse = newConv.conversationId;
+      } catch (error) {
+        console.error('发送消息前创建新会话失败:', error);
+        setIsProcessingConversation(false);
+        return;
+      } finally {
+        setIsProcessingConversation(false);
+      }
+    }
+    
+    if (!conversationToUse) return;
+
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
 
-    // 1. 添加用户消息
     const userMessage: Message = {
-      id: `user-${Date.now()}`,
+      id: generateLocalId(),
       content,
       isUser: true,
       timestamp: new Date(),
     };
 
-    // 2. 添加一个空的AI消息占位符，用于后续填充
-    const aiMessageId = `ai-${Date.now()}`;
+    const aiMessageId = generateLocalId();
     const initialAiMessage: Message = {
       id: aiMessageId,
-      content: '', // 初始为空
+      content: '',
       isUser: false,
       timestamp: new Date(),
     };
-
-    setMessages((prev) => [...prev, userMessage, initialAiMessage]);
-    setLoading(true);
     
-    // 获取当前会话ID
-    const sessionId = getSessionId();
+    setMessages(prev => ({
+      ...prev,
+      [conversationToUse!]: [...(prev[conversationToUse!] || []), userMessage, initialAiMessage],
+    }));
+    setSendingMessage(true);
 
-    // 3. 调用SSE接口，传递会话ID
     eventSourceRef.current = sendMessageStream(
       content,
       {
-      /**
-       * 接收到消息块时的处理
-       * @param chunk 收到的文本块
-       */
-      onMessage: (chunk) => {
-        setMessages((prevMessages) =>
-          prevMessages.map((msg) =>
-            msg.id === aiMessageId
-              ? { ...msg, content: msg.content + chunk } // 将新块附加到现有内容
-              : msg
-          )
-        );
+        onMessage: (chunk) => {
+          setMessages(prevMessages => {
+            const currentConvMessages = prevMessages[conversationToUse!] || [];
+            return {
+              ...prevMessages,
+              [conversationToUse!]: currentConvMessages.map((msg) =>
+                msg.id === aiMessageId
+                  ? { ...msg, content: msg.content + chunk }
+                  : msg
+              ),
+            };
+          });
+        },
+        onError: (error) => {
+          console.error('SSE 接收错误:', error);
+          setMessages(prevMessages => {
+            const currentConvMessages = prevMessages[conversationToUse!] || [];
+            return {
+              ...prevMessages,
+              [conversationToUse!]: currentConvMessages.map((msg) =>
+                msg.id === aiMessageId
+                  ? { ...msg, content: '抱歉，发生错误，请稍后再试。' }
+                  : msg
+              ),
+            };
+          });
+          setSendingMessage(false);
+          eventSourceRef.current = null;
+        },
+        onClose: () => {
+          setSendingMessage(false);
+          eventSourceRef.current = null;
+          console.log('SSE 连接已关闭');
+          if (userId) loadConversations(userId);
+        }
       },
-      /**
-       * 发生错误时的处理
-       * @param error 错误对象
-       */
-      onError: (error) => {
-        console.error('SSE 接收错误:', error);
-        setMessages((prevMessages) =>
-          prevMessages.map((msg) =>
-            msg.id === aiMessageId
-              ? { ...msg, content: '抱歉，发生错误，请稍后再试。' }
-              : msg
-          )
-        );
-        setLoading(false);
-        eventSourceRef.current = null; // 清理引用
-      },
-      /**
-       * 连接关闭时的处理
-       */
-      onClose: () => {
-        setLoading(false);
-        eventSourceRef.current = null; // 清理引用
-        console.log('SSE 连接已关闭');
-      }
-      },
-      sessionId
+      conversationToUse
     );
   };
 
-  // 自动滚动到最新消息
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messages]);
-
-  // 初始化主题
-  useEffect(() => {
-    initTheme();
-  }, []);
+  }, [currentMessages]);
 
   return (
-    // 使用 CSS 变量设置 body 背景
-    <div className="flex flex-col h-screen bg-[rgb(var(--background-rgb))] text-[rgb(var(--foreground-rgb))]" >
+    <div className="flex h-screen bg-[rgb(var(--background-rgb))] text-[rgb(var(--foreground-rgb))]">
       <Head>
         <title>AI 聊天助手</title>
         <meta name="description" content="基于AI的智能聊天助手" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      {/* 简化 Header - 更像 ChatGPT */}
-      <header className="bg-transparent py-3 px-4 sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto w-full flex items-center justify-between">
-          {/* 居中标题或留空，这里暂时保留标题 */}
-          {/* <h1 className="text-lg font-medium text-[rgb(var(--foreground-rgb))] opacity-80">ChatGPT</h1> */}
-          {/* 占位符，保持右侧按钮位置 */}
-          <div></div>
-          <div className="flex items-center">
-            <ThemeToggle />
-            {/* 可以添加其他图标按钮，如新建聊天等 */}
-          </div>
-        </div>
-      </header>
-
-      {/* 调整 Main 布局以更像 ChatGPT */}
-      {/* 移除 overflow-hidden，让页面根元素处理滚动 */}
-      {/* 根据是否有消息动态添加 pb */}
-      <main className={`flex-1 flex flex-col pt-2 sm:pt-4 max-w-3xl mx-auto w-full min-h-0 ${messages.length > 0 ? 'pb-24 sm:pb-28' : 'pb-4'}`}>
-        {/* 聊天容器 - 根据是否有消息调整样式 */}
-        {/* 移除 flex-1 和 overflow-y-auto */}
-        <div
-          ref={chatContainerRef}
-          // 移除 justify-center，添加 pt-20
-          // 移除 mb-4
-          className={`py-6 px-2 sm:px-4 chat-container ${messages.length === 0 ? 'flex flex-col flex-1 pt-20' : ''}`}
-        >
-          {messages.length === 0 ? (
-            // 移除 pb-32
-            <div className="p-6 flex flex-col">
-              {/* 给 h2 单独添加 text-center */} 
-              <h2 className="text-3xl font-semibold text-[rgb(var(--foreground-rgb))] mb-12 opacity-90 text-center">有什么可以帮忙的？</h2>
-              {/* 在空状态下，输入框显示在这里 */} 
-              <div className="w-full">
-                <ChatInput onSendMessage={handleSendMessage} disabled={loading} />
-              </div>
+      <div className={`fixed inset-y-0 left-0 z-40 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:flex md:flex-shrink-0 transition-transform duration-200 ease-in-out`}>
+        {userId && (
+          <ConversationSidebar
+            conversations={conversations}
+            currentConversationId={currentConversationId}
+            onSelectConversation={handleSelectConversation}
+            onCreateConversation={handleCreateConversation}
+            onDeleteConversation={handleDeleteConversation}
+            userId={userId}
+            isLoading={isLoadingConversations || isProcessingConversation}
+          />
+        )}
+      </div>
+      
+      <div className="flex flex-col flex-1 min-w-0 h-screen">
+        <header className="bg-transparent py-2.5 px-4 sticky top-0 z-30 border-b border-[rgb(var(--border-color))] dark:border-[rgb(var(--neutral-800))] md:border-b-0">
+          <div className="max-w-3xl mx-auto w-full flex items-center justify-between">
+            <div className="flex items-center">
+              <button
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="md:hidden p-2 mr-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+              >
+                {isSidebarOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
+              </button>
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white truncate">
+                {currentConversationId ? conversations.find(c => c.conversationId === currentConversationId)?.title : 'Chat'}
+              </h2>
             </div>
-          ) : (
-            // 显示聊天消息
-            <div className="space-y-1">
-              {messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
-              ))}
-            </div>
-          )}
-
-          {/* 加载指示器 - 仅在有消息时显示在消息列表下方 */}
-          {loading && messages.length > 0 && (
-            <div className="pl-3 mt-2">
-              <div className="typing-indicator">
-                <div className="w-2 h-2 bg-[rgb(var(--primary-600))] rounded-full animate-pulse"></div>
-                <div className="w-2 h-2 bg-[rgb(var(--primary-600))] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-2 h-2 bg-[rgb(var(--primary-600))] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 输入区域 - 移出 main，作为根 div 的子元素 (仅在有消息时) */}
-        {/* 删除这部分，将其移动到 main 外部的条件渲染中 */}
-      </main>
-
-      {/* 输入区域 - 仅在有消息时固定在页面底部 */}
-      {messages.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 w-full bg-[rgb(var(--background-rgb))] pt-2 pb-4 sm:pb-6 z-30 px-2 sm:px-4">
-          {/* 容器限制宽度并居中 */}
-          <div className="max-w-3xl mx-auto">
-            <div>
-              <ChatInput onSendMessage={handleSendMessage} disabled={loading} />
+            <div className="flex items-center space-x-3">
+              <ThemeToggle />
+              <button
+                onClick={handleLogout}
+                title="登出"
+                className="p-2 text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400"
+              >
+                <ArrowRightOnRectangleIcon className="h-6 w-6" />
+              </button>
             </div>
           </div>
-        </div>
-      )}
+        </header>
+
+        <main className={`flex-1 flex flex-col pt-2 sm:pt-4 max-w-3xl mx-auto w-full min-h-0 ${currentMessages.length > 0 || currentConversationId ? 'pb-24 sm:pb-28' : 'pb-4'}`}>
+          <div
+            ref={chatContainerRef}
+            className={`py-6 px-2 sm:px-4 chat-container flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-[rgb(var(--scrollbar-thumb))] ${currentMessages.length === 0 && !currentConversationId ? 'flex flex-col justify-center' : ''}`}
+          >
+            {currentMessages.length === 0 && !sendingMessage && (
+              <div className="p-6 flex flex-col items-center text-center">
+                 {!currentConversationId && !isLoadingConversations ? (
+                    <>
+                        <h2 className="text-3xl font-semibold text-[rgb(var(--foreground-rgb))] mb-12 opacity-90">
+                            有什么可以帮忙的？
+                        </h2>
+                        <div className="w-full max-w-md">
+                            <ChatInput onSendMessage={handleSendMessage} disabled={sendingMessage || isProcessingConversation} />
+                        </div>
+                    </>
+                 ) : currentConversationId && conversations.find(c=>c.conversationId === currentConversationId) ? (
+                    <p className="text-lg text-[rgb(var(--muted-foreground-rgb))] opacity-80">
+                      开始与 "{conversations.find(c=>c.conversationId === currentConversationId)?.title || '助手'}" 对话。
+                    </p>
+                 ) : isLoadingConversations || isProcessingConversation ? (
+                    <p className="text-lg text-[rgb(var(--muted-foreground-rgb))] opacity-80">正在加载会话...</p>
+                 ) : (
+                    <p className="text-lg text-[rgb(var(--muted-foreground-rgb))] opacity-80">选择一个会话或新建一个会话开始聊天。</p>
+                 )
+                }
+              </div>
+            )}
+            {currentMessages.length > 0 && (
+              <div className="space-y-1">
+                {currentMessages.map((message) => (
+                  <ChatMessage key={message.id} message={message} />
+                ))}
+              </div>
+            )}
+            {sendingMessage && currentMessages.some(m => m.id === (currentMessages.find(msg => !msg.isUser && msg.content === '')?.id)) && (
+              <div className="pl-3 mt-2 self-start">
+                <div className="typing-indicator">
+                  <div className="w-2 h-2 bg-[rgb(var(--primary-600))] rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-[rgb(var(--primary-600))] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 bg-[rgb(var(--primary-600))] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                </div>
+              </div>
+            )}
+          </div>
+        </main>
+
+        {currentConversationId && (
+          <div className="fixed bottom-0 left-0 right-0 w-full bg-gradient-to-t from-[rgb(var(--background-rgb))] via-[rgb(var(--background-rgb))] to-transparent pt-6 pb-4 sm:pb-6 z-20 md:pl-72">
+            <div className="max-w-3xl mx-auto px-2 sm:px-4">
+              <ChatInput onSendMessage={handleSendMessage} disabled={sendingMessage || isProcessingConversation || !currentConversationId} />
+            </div>
+          </div>
+        )}
+        {!currentConversationId && currentMessages.length === 0 && !isLoadingConversations && !isProcessingConversation && (
+           <div className="fixed bottom-0 left-0 right-0 w-full bg-gradient-to-t from-[rgb(var(--background-rgb))] via-[rgb(var(--background-rgb))] to-transparent pt-6 pb-4 sm:pb-6 z-20 md:pl-72">
+            <div className="max-w-3xl mx-auto px-2 sm:px-4">
+                 <ChatInput onSendMessage={handleSendMessage} disabled={sendingMessage || isProcessingConversation} />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

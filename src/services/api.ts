@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 /**
  * API基础URL配置
  */
@@ -137,3 +139,82 @@ export const sendMessageStream = (
     },
   };
 };
+
+// --- 新增会话管理 API 函数 ---
+
+/**
+ * 获取指定用户的所有会话
+ * @param userId 用户ID
+ * @returns 会话列表Promise
+ */
+export const getUserConversations = async (userId: string): Promise<ApiConversation[]> => {
+  try {
+    const response = await axios.get<ApiConversation[]>(`${API_BASE_URL}/api/conversations`, {
+      params: { userId },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('获取用户会话失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 创建新会话
+ * @param payload 创建会话的请求体 { userId, title? }
+ * @returns 新创建的会话Promise
+ */
+export const createConversation = async (payload: CreateConversationPayload): Promise<ApiConversation> => {
+  try {
+    const response = await axios.post<ApiConversation>(`${API_BASE_URL}/api/conversations`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('创建新会话失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 获取指定会话信息
+ * @param conversationId 会话ID
+ * @returns 会话信息Promise
+ */
+export const getConversation = async (conversationId: string): Promise<ApiConversation> => {
+  try {
+    const response = await axios.get<ApiConversation>(`${API_BASE_URL}/api/conversations/${conversationId}`);
+    return response.data;
+  } catch (error) {
+    console.error('获取指定会话信息失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 删除会话
+ * @param conversationId 会话ID
+ * @returns Promise<void>
+ */
+export const deleteConversation = async (conversationId: string): Promise<void> => {
+  try {
+    await axios.delete(`${API_BASE_URL}/api/conversations/${conversationId}`);
+  } catch (error) {
+    console.error('删除会话失败:', error);
+    throw error;
+  }
+};
+
+// 新增：后端返回的会话对象类型
+export interface ApiConversation {
+  conversationId: string;
+  userId: string;
+  title: string;
+  createTime: string; // ISO date-time string
+  updateTime: string; // ISO date-time string
+  metadata?: string;
+}
+
+// 新增：创建会话的请求体类型
+export interface CreateConversationPayload {
+  userId: string;
+  title?: string;
+}
