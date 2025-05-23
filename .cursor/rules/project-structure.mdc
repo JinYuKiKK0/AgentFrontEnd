@@ -1,0 +1,119 @@
+---
+description: 项目的介绍，项目结构
+globs: 
+alwaysApply: false
+---
+## 项目名称：MyAgent FrontEnd
+
+### 1. 项目概述
+MyAgent FrontEnd 是一个模仿 Claude 聊天界面的前端应用（SPA），负责与后端 Spring Boot + Spring AI 服务交互，提供流式对话体验和会话管理功能。
+
+核心目标：
+1. **高性能**：使用 Vite + React 18 + TypeScript 构建，开发启动秒开，产物体积小。
+2. **高可维护性**：模块化目录、严格的类型约束、统一的 API 层、Hooks + 组件解耦。
+3. **良好用户体验**：TailwindCSS + Headless UI 快速构建响应式、暗黑模式友好的 UI；支持 SSE 实时输出。
+4. **易扩展**：后端接口通过 OpenAPI 代码生成，接口变更零手工维护，方便后期接入多模型、多租户等能力。
+
+### 2. 技术栈
+- **构建工具**：Vite 5
+- **核心框架**：React 18 + TypeScript 5
+- **样式**：TailwindCSS 3，PostCSS，可选 daisyUI/Headless UI
+- **UI组件库**：尽可能使用成熟的UI组件库，如 Material-UI (MUI)、Ant Design、Chakra UI 等，提供一致的设计语言和丰富的组件生态
+- **路由**：React Router DOM 6
+- **状态管理**：Zustand（轻量）
+- **数据获取**：react-query（TanStack Query）+ axios，内置 SSE 支持
+- **接口代码生成**：openapi-typescript + openapi-fetch
+- **代码质量**：ESLint、Prettier、Husky + lint-staged、Commitlint
+- **测试**：Vitest + Testing Library
+
+### 3. 目录结构（`src/`）
+```
+src/
+├─ assets/              # 静态资源（svg/png/font）
+├─ components/          # 通用基础组件库（Button/Input/Dialog/...）
+├─ features/            # 业务特性模块
+│   └─ chat/
+│       ├─ components/  # ChatMessage/SessionCard 等
+│       ├─ hooks/       # useChatStream/useChatSessions
+│       ├─ api.ts       # chat 相关 API 封装
+│       └─ index.tsx    # 页面入口
+├─ pages/               # 路由页面（懒加载）
+│   ├─ Chat/index.tsx
+│   └─ Settings/index.tsx
+├─ store/               # Zustand 全局状态（user/theme/...）
+├─ hooks/               # 跨模块复用 Hooks（useSSE/useDebounce/...）
+├─ services/            # 后端通用服务封装（axios 实例、拦截器）
+├─ router/              # React Router 配置
+├─ types/               # 全局 TS 类型声明（由 OpenAPI 自动生成）
+├─ utils/               # 通用工具函数（formatDate/uuid/...）
+├─ App.tsx              # 应用根组件
+└─ main.tsx             # 入口文件
+```
+> OpenAPI 生成的类型文件默认输出到 `src/types/openapi.d.ts`，接口调用封装位于 `src/services/api.ts`。
+
+### 4. 核心设计说明
+1. **接口层**
+   - 使用 `openapi-typescript` 根据 `default_OpenAPI.json` 生成类型安全的接口声明。
+   - 通过 `openapi-fetch` 创建 `fetcher`，自动携带 baseURL、全局错误处理。
+   - 流式聊天 (`text/event-stream`) 通过浏览器原生 `EventSource` 封装为 `useSSE` Hook，返回可取消的消息流。
+
+2. **状态管理**
+   - 聊天内容采用局部组件状态 + `react-query` 缓存结合，保证页面切换数据持久。
+   - 会话列表使用 `react-query` 的 `infiniteQuery` + 后端游标分页，自动拉取更多。
+
+3. **UI/UX**
+   - 支持浅色/深色主题切换（Tailwind `dark` 方案），主题状态存在 `localStorage` 并由 `store/theme` 管理。
+   - 聊天输入框支持 `Shift+Enter` 换行，`Enter` 发送；发送后自动滚动到底部。
+   - SSE 数据到达时逐字渲染（打字机效果），保证流畅体验。
+
+4. **环境变量**（`.env`）
+```
+VITE_APP_API_BASE=http://localhost:8080
+VITE_APP_TITLE=MyAgent
+```
+
+### 5. 开发命令
+```
+# 安装依赖（建议使用 pnpm）
+pnpm i
+
+# 本地开发
+task dev          # 等价 pnpm dev，使用 vite 启动
+
+# 生产打包
+task build        # 生成 dist
+
+# 预览打包结果
+task preview
+```
+> `task` 来自 `npm-run-all`/`tsx` 的自定义脚本，可直接用 `pnpm` 同名命令替换。
+
+### 6. 约定 & 最佳实践
+- **组件命名**：严格使用 PascalCase；Hook 以 `use` 前缀。
+- **路径别名**：`@/` 指向 `src/`，通过 `tsconfig.paths` 与 `vite.alias` 保持一致。
+- **请求约定**：除聊天 SSE 外，其余接口使用 `application/json`；统一错误码在 `interceptor.ts` 处理。
+- **代码分割**：路由懒加载 + `Suspense`；大组件按需拆分。
+- **UI组件库使用**：
+  - 优先使用 UI 组件库提供的基础组件（Button、Input、Dialog、Table 等）
+  - 保持组件库的设计系统一致性，避免过度自定义样式
+  - 对于复杂业务组件，基于 UI 组件库进行二次封装
+  - 建议选择：Material-UI (MUI) 用于现代化设计，Ant Design 用于中后台系统，Chakra UI 用于简洁设计
+
+### 7. 与后端接口映射
+| 前端功能 | 后端接口（Method） | 说明 |
+| --- | --- | --- |
+| 创建会话 | `/session/create` (POST) | 创建并返回 `conversationId` |
+| 拉取会话列表 | `/session/list` (GET) | 游标分页 `lastConversationId` |
+| 删除/批删会话 | `/session/delete` / `/session/batch-delete` (DELETE) | 支持清理聊天记录 |
+| 聊天流 | `/ai/chat` (GET, SSE) | `prompt` + `chatId` ，实时返回消息 |
+
+### 8. Todo / 扩展点
+- OAuth 登录 & 用户系统接入
+- PWA 支持离线缓存
+- 录音转文字（Chrome Speech API）
+- 多语言 i18n
+
+---
+**阅读指引**：
+
+前端 AI 可从 `src/features/chat` 入口开始，实现与后端的消息流交互；遇到新接口优先修改 OpenAPI JSON 并重新生成类型，确保类型安全。 

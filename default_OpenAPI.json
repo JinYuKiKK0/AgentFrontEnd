@@ -1,0 +1,394 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Agent API",
+    "description": "基于SpringBoot + Spring AI的智能助手Agent项目",
+    "contact": {
+      "name": "Jinyu",
+      "email": "jinyu067@gmail.com"
+    },
+    "version": "v0.0.1"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "name": "AI聊天接口",
+      "description": "提供AI聊天功能的接口"
+    },
+    {
+      "name": "会话管理接口",
+      "description": "提供会话管理功能的接口"
+    }
+  ],
+  "paths": {
+    "/session/create": {
+      "post": {
+        "tags": [
+          "会话管理接口"
+        ],
+        "summary": "创建新的聊天会话",
+        "operationId": "createChatSession",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "description": "用户ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "description": "会话标题",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultString"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/session/list": {
+      "get": {
+        "tags": [
+          "会话管理接口"
+        ],
+        "summary": "获取历史会话列表，游标分页",
+        "operationId": "listChatSessions",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "description": "用户ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lastConversationId",
+            "in": "query",
+            "description": "最后一次查询到的会话Id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "单页大小",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListChatSessionVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/chat": {
+      "get": {
+        "tags": [
+          "AI聊天接口"
+        ],
+        "summary": "聊天接口",
+        "description": "与AI进行对话，返回AI生成的回复",
+        "operationId": "chat",
+        "parameters": [
+          {
+            "name": "prompt",
+            "in": "query",
+            "description": "用户输入的提示词",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "chatId",
+            "in": "query",
+            "description": "会话Id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/event-stream;charset=UTF-8": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/session/delete": {
+      "delete": {
+        "tags": [
+          "会话管理接口"
+        ],
+        "summary": "删除聊天会话",
+        "operationId": "deleteChatSession",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "description": "用户ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "conversationId",
+            "in": "query",
+            "description": "会话ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clearChatMemory",
+            "in": "query",
+            "description": "是否清理聊天记录",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/session/batch-delete": {
+      "delete": {
+        "tags": [
+          "会话管理接口"
+        ],
+        "summary": "批量删除聊天会话",
+        "operationId": "batchDeleteChatSessions",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "description": "用户ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clearChatMemory",
+            "in": "query",
+            "description": "是否清理聊天记录",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "description": "会话ID列表",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultInteger"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ResultString": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string"
+          }
+        }
+      },
+      "ChatSessionVO": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "ResultListChatSessionVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatSessionVO"
+            }
+          }
+        }
+      },
+      "ResultBoolean": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ResultInteger": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      }
+    }
+  },
+  "x-openapi": {
+    "x-setting": {
+      "customCode": 200,
+      "language": "zh-CN",
+      "enableSwaggerModels": true,
+      "swaggerModelName": "Swagger Models",
+      "enableReloadCacheParameter": false,
+      "enableAfterScript": true,
+      "enableDocumentManage": true,
+      "enableVersion": false,
+      "enableRequestCache": true,
+      "enableFilterMultipartApis": false,
+      "enableFilterMultipartApiMethodType": "POST",
+      "enableHost": false,
+      "enableHostText": "",
+      "enableDynamicParameter": false,
+      "enableDebug": true,
+      "enableFooter": true,
+      "enableFooterCustom": false,
+      "enableSearch": true,
+      "enableOpenApi": true,
+      "enableHomeCustom": false,
+      "enableGroup": true,
+      "enableResponseCode": true
+    },
+    "x-markdownFiles": []
+  }
+}
