@@ -1,0 +1,115 @@
+---
+description: 关于前端样式设计要求
+globs: 
+alwaysApply: false
+---
+# Style Guidelines - 样式设计指南
+
+## 设计理念
+
+### 核心设计原则
+- **简洁至上**: 遵循"少即是多"的设计哲学
+- **用户体验优先**: 所有设计决策以用户体验为第一考量
+- **一致性**: 保持整个应用的视觉一致性
+- **可访问性**: 确保所有用户都能轻松使用
+
+### 设计目标
+- **模仿Claude聊天界面**: 提供熟悉且友好的聊天体验
+- **现代化界面**: 使用最新的设计趋势和最佳实践
+- **响应式设计**: 在所有设备上提供优质体验
+- **暗黑模式友好**: 支持浅色/深色主题无缝切换
+
+## UI组件库选择策略
+
+**1. Material-UI (MUI) - 首选 ⭐⭐⭐⭐⭐**
+- ✅ 完整的Material Design 3规范实现
+- ✅ 丰富的组件生态系统和优秀的TypeScript支持
+
+**2. TailwindCSS - 辅助样式**
+- 快速布局调整和响应式设计
+
+**3. 备选方案**: Ant Design（中后台）、Chakra UI（简洁设计）
+
+## 主题系统设计
+
+### 色彩与主题配置
+```typescript
+const colors = {
+  primary: '#2196f3', success: '#4caf50',
+  warning: '#ff9800', error: '#f44336',
+};
+
+// 深色主题
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: { main: '#90caf9' },
+    background: { default: '#0a0a0a', paper: '#1a1a1a' },
+  },
+});
+```
+
+## 布局与间距系统
+
+### 响应式断点与间距
+```typescript
+const breakpoints = { xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536 };
+const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 };
+const borderRadius = { sm: '4px', md: '8px', lg: '12px', full: '50%' };
+```
+
+## 聊天界面特殊设计
+
+### 消息气泡样式
+```typescript
+const messageStyles = {
+  user: {
+    backgroundColor: 'primary.main',
+    borderRadius: '18px 18px 4px 18px',
+    maxWidth: '70%',
+    marginLeft: 'auto',
+  },
+  assistant: {
+    backgroundColor: 'grey.100',
+    borderRadius: '18px 18px 18px 4px',
+    maxWidth: '80%',
+    marginRight: 'auto',
+  },
+};
+```
+
+### 输入框设计
+```typescript
+const chatInputStyles = {
+  borderRadius: '24px',
+  border: '1px solid',
+  borderColor: 'divider',
+  '&:focus-within': {
+    borderColor: 'primary.main',
+    boxShadow: '0 0 0 2px rgba(25, 118, 210, 0.2)',
+  },
+};
+```
+
+## 图标与字体规范
+
+### Material Icons使用
+```typescript
+// 标准尺寸：small(20px), medium(24px), large(32px)
+<HomeIcon fontSize="medium" color="primary" />
+```
+
+### 字体系统
+```typescript
+const typography = {
+  fontFamily: ['Inter', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'].join(','),
+};
+```
+
+## 重要约定
+
+- 严格遵循Material Design规范
+- 优先使用UI组件库提供的组件
+- 基于组件库的设计系统进行扩展
+
+- 所有样式决策以用户体验为中心 
