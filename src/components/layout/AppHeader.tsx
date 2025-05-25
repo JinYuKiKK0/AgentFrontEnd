@@ -5,13 +5,9 @@ import {
   Toolbar,
   Typography,
   Box,
-  IconButton,
-  Tooltip,
   Button,
 } from '@mui/material';
 import {
-  SmartToy,
-  GitHub,
   Settings,
   Chat,
 } from '@mui/icons-material';
@@ -25,39 +21,39 @@ const AppHeader: React.FC = () => {
   };
 
   return (
-    <AppBar position="static" elevation={1}>
-      <Toolbar>
-        {/* Logo和标题 */}
+    <AppBar 
+      position="static" 
+      elevation={0}
+      sx={{
+        bgcolor: 'background.paper',
+        color: 'text.primary',
+        borderBottom: 1,
+        borderColor: 'divider',
+      }}
+    >
+      <Toolbar sx={{ px: 3 }}>
+        {/* 左侧留空或放置简单标识 */}
         <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-          <SmartToy sx={{ mr: 2, fontSize: 32 }} />
-          <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-            AI 智能助手
-          </Typography>
-          <Typography 
-            variant="caption" 
-            sx={{ 
-              ml: 1, 
-              px: 1, 
-              py: 0.5, 
-              bgcolor: 'rgba(255,255,255,0.2)', 
-              borderRadius: 1,
-              fontSize: '0.7rem',
-            }}
-          >
-            v0.0.1
+          <Typography variant="h6" component="div" sx={{ fontWeight: 500, color: 'text.primary' }}>
+            聊天
           </Typography>
         </Box>
 
         {/* 导航按钮 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Button
-            color="inherit"
+            color={location.pathname === '/chat' ? 'primary' : 'inherit'}
             startIcon={<Chat />}
             onClick={() => handleNavigation('/chat')}
             sx={{
-              bgcolor: location.pathname === '/chat' ? 'rgba(255,255,255,0.1)' : 'transparent',
+              textTransform: 'none',
+              fontWeight: 500,
+              px: 2,
+              py: 1,
+              borderRadius: 2,
+              bgcolor: location.pathname === '/chat' ? '#e3f2fd' : 'transparent',
               '&:hover': {
-                bgcolor: 'rgba(255,255,255,0.2)',
+                bgcolor: location.pathname === '/chat' ? '#bbdefb' : 'action.hover',
               },
             }}
           >
@@ -65,31 +61,23 @@ const AppHeader: React.FC = () => {
           </Button>
           
           <Button
-            color="inherit"
+            color={location.pathname === '/settings' ? 'primary' : 'inherit'}
             startIcon={<Settings />}
             onClick={() => handleNavigation('/settings')}
             sx={{
-              bgcolor: location.pathname === '/settings' ? 'rgba(255,255,255,0.1)' : 'transparent',
+              textTransform: 'none',
+              fontWeight: 500,
+              px: 2,
+              py: 1,
+              borderRadius: 2,
+              bgcolor: location.pathname === '/settings' ? '#e3f2fd' : 'transparent',
               '&:hover': {
-                bgcolor: 'rgba(255,255,255,0.2)',
+                bgcolor: location.pathname === '/settings' ? '#bbdefb' : 'action.hover',
               },
             }}
           >
             设置
           </Button>
-        </Box>
-
-        {/* 右侧操作按钮 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Tooltip title="GitHub">
-            <IconButton 
-              color="inherit" 
-              size="small"
-              onClick={() => window.open('https://github.com', '_blank')}
-            >
-              <GitHub />
-            </IconButton>
-          </Tooltip>
         </Box>
       </Toolbar>
     </AppBar>

@@ -1,6 +1,6 @@
 import { createTheme, ThemeOptions } from '@mui/material/styles';
 
-// 定义主题配置
+// 定义主题配置 - 专注于PC端桌面应用
 const themeOptions: ThemeOptions = {
   palette: {
     mode: 'light',
@@ -47,84 +47,110 @@ const themeOptions: ThemeOptions = {
     },
   },
   typography: {
+    // 中英文字体配置，针对桌面环境优化
     fontFamily: [
       'Roboto',
+      'Microsoft YaHei',
+      '微软雅黑',
+      'PingFang SC',
+      'Hiragino Sans GB',
       '"Helvetica Neue"',
       'Arial',
       'sans-serif',
-      '"Apple Color Emoji"',
-      '"Segoe UI Emoji"',
-      '"Segoe UI Symbol"',
     ].join(','),
     h1: {
-      fontSize: '2.125rem', // 34px
+      fontSize: '2.125rem', // 34px - 页面主标题
       fontWeight: 300,
-      lineHeight: 1.167,
+      lineHeight: 1.235,
+      letterSpacing: '-0.00735em',
     },
     h2: {
-      fontSize: '1.5rem', // 24px
+      fontSize: '1.5rem', // 24px - 章节标题
       fontWeight: 400,
-      lineHeight: 1.2,
+      lineHeight: 1.334,
+      letterSpacing: '0em',
     },
     h3: {
-      fontSize: '1.25rem', // 20px
+      fontSize: '1.25rem', // 20px - 子章节标题
       fontWeight: 500,
-      lineHeight: 1.167,
+      lineHeight: 1.6,
+      letterSpacing: '0.0075em',
     },
     h4: {
-      fontSize: '1.125rem', // 18px
+      fontSize: '1.125rem', // 18px - 组件标题
       fontWeight: 500,
       lineHeight: 1.235,
+      letterSpacing: '0.00735em',
     },
     h5: {
       fontSize: '1rem', // 16px
       fontWeight: 500,
       lineHeight: 1.334,
+      letterSpacing: '0em',
     },
     h6: {
       fontSize: '0.875rem', // 14px
       fontWeight: 500,
       lineHeight: 1.6,
+      letterSpacing: '0.0075em',
     },
     body1: {
-      fontSize: '1rem', // 16px
+      fontSize: '1rem', // 16px - 主要正文
       fontWeight: 400,
       lineHeight: 1.5,
+      letterSpacing: '0.00938em',
     },
     body2: {
-      fontSize: '0.875rem', // 14px
+      fontSize: '0.875rem', // 14px - 次要正文
       fontWeight: 400,
       lineHeight: 1.43,
+      letterSpacing: '0.01071em',
     },
     caption: {
-      fontSize: '0.75rem', // 12px
+      fontSize: '0.75rem', // 12px - 辅助信息
       fontWeight: 400,
       lineHeight: 1.66,
+      letterSpacing: '0.03333em',
     },
     button: {
-      fontSize: '0.875rem', // 14px
+      fontSize: '0.875rem', // 14px - 按钮文字
       fontWeight: 500,
       lineHeight: 1.75,
-      textTransform: 'uppercase',
+      letterSpacing: '0.02857em',
+      textTransform: 'none', // 遵循Material Design最佳实践，不转换大小写
     },
   },
   spacing: 8, // 基础间距单位：8px
   shape: {
     borderRadius: 4, // 默认圆角
   },
+  // 桌面断点配置
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 900,    // 小桌面
+      lg: 1200,   // 标准桌面
+      xl: 1536,   // 大屏桌面
+    },
+  },
   components: {
-    // 自定义组件默认样式
+    // 自定义组件默认样式 - 桌面优化
     MuiButton: {
       styleOverrides: {
         root: {
           borderRadius: 8, // 按钮圆角
-          textTransform: 'none', // 不转换大小写
+          textTransform: 'none', // 不转换大小写，符合现代Material Design
           fontWeight: 500,
+          minHeight: 36, // 最小高度，适合桌面点击
+          padding: '8px 16px', // 标准内边距
+          cursor: 'pointer', // 桌面鼠标指针
         },
         contained: {
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
           '&:hover': {
             boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+            transform: 'translateY(-1px)', // 轻微上移效果
           },
         },
       },
@@ -134,6 +160,12 @@ const themeOptions: ThemeOptions = {
         root: {
           borderRadius: 12, // 卡片圆角
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          // 桌面悬浮效果
+          '&:hover': {
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            transform: 'translateY(-2px)',
+            transition: 'all 0.2s ease-in-out',
+          },
         },
       },
     },
@@ -142,6 +174,10 @@ const themeOptions: ThemeOptions = {
         root: {
           '& .MuiOutlinedInput-root': {
             borderRadius: 8, // 输入框圆角
+            // 桌面焦点效果
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: 'rgba(25, 118, 210, 0.5)',
+            },
           },
         },
       },
@@ -152,13 +188,25 @@ const themeOptions: ThemeOptions = {
           borderRadius: 8,
         },
         elevation1: {
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          boxShadow: '0 2px 1px -1px rgba(0,0,0,0.2), 0 1px 1px 0 rgba(0,0,0,0.14), 0 1px 3px 0 rgba(0,0,0,0.12)',
         },
         elevation2: {
-          boxShadow: '0 4px 8px rgba(0,0,0,0.12)',
+          boxShadow: '0 3px 1px -2px rgba(0,0,0,0.2), 0 2px 2px 0 rgba(0,0,0,0.14), 0 1px 5px 0 rgba(0,0,0,0.12)',
         },
         elevation3: {
-          boxShadow: '0 6px 12px rgba(0,0,0,0.15)',
+          boxShadow: '0 3px 3px -2px rgba(0,0,0,0.2), 0 3px 4px 0 rgba(0,0,0,0.14), 0 1px 8px 0 rgba(0,0,0,0.12)',
+        },
+        elevation4: {
+          boxShadow: '0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12)',
+        },
+        elevation8: {
+          boxShadow: '0 5px 5px -3px rgba(0,0,0,0.2), 0 8px 10px 1px rgba(0,0,0,0.14), 0 3px 14px 2px rgba(0,0,0,0.12)',
+        },
+        elevation16: {
+          boxShadow: '0 8px 10px -5px rgba(0,0,0,0.2), 0 16px 24px 2px rgba(0,0,0,0.14), 0 6px 30px 5px rgba(0,0,0,0.12)',
+        },
+        elevation24: {
+          boxShadow: '0 11px 15px -7px rgba(0,0,0,0.2), 0 24px 38px 3px rgba(0,0,0,0.14), 0 9px 46px 8px rgba(0,0,0,0.12)',
         },
       },
     },
@@ -166,6 +214,29 @@ const themeOptions: ThemeOptions = {
       styleOverrides: {
         root: {
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        },
+      },
+    },
+    // 桌面表格优化
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          padding: '16px', // 桌面表格间距
+        },
+        head: {
+          fontWeight: 500,
+          backgroundColor: '#f5f5f5',
+        },
+      },
+    },
+    // 桌面列表优化
+    MuiListItem: {
+      styleOverrides: {
+        root: {
+          padding: '12px 16px', // 桌面列表间距
+          '&:hover': {
+            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+          },
         },
       },
     },
@@ -177,8 +248,6 @@ const themeOptions: ThemeOptions = {
       short: 250,
       standard: 300,
       complex: 375,
-      enteringScreen: 225,
-      leavingScreen: 195,
     },
     easing: {
       easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',

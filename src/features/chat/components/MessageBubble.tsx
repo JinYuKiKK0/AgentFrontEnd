@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Paper, Typography, Avatar, CircularProgress, IconButton, Tooltip, Snackbar, Alert } from '@mui/material';
-import { Person, SmartToy, ContentCopy, MoreVert } from '@mui/icons-material';
+import { Person, SmartToy, ContentCopy } from '@mui/icons-material';
 import { ChatMessage } from '../../../types/api';
 import { copyToClipboard } from '../../../utils/formatters';
 
@@ -26,15 +26,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isStreaming = fa
   return (
     <>
       <Box
-        className="message-enter"
         onMouseEnter={() => setShowActions(true)}
         onMouseLeave={() => setShowActions(false)}
         sx={{
           display: 'flex',
           justifyContent: isUser ? 'flex-end' : 'flex-start',
-          mb: 2,
+          mb: 3,
           alignItems: 'flex-start',
-          gap: 1,
+          gap: 2,
           position: 'relative',
         }}
       >
@@ -43,9 +42,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isStreaming = fa
           <Avatar
             sx={{
               bgcolor: 'primary.main',
-              width: 32,
-              height: 32,
-              mt: 0.5,
+              width: 36,
+              height: 36,
             }}
           >
             <SmartToy fontSize="small" />
@@ -53,115 +51,96 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isStreaming = fa
         )}
 
         {/* 消息内容 */}
-        <Paper
-          elevation={1}
+        <Box
           sx={{
-            p: 2,
             maxWidth: '70%',
-            backgroundColor: isUser ? 'primary.main' : 'grey.100',
-            color: isUser ? 'primary.contrastText' : 'text.primary',
-            borderRadius: 2,
             position: 'relative',
-            // 添加消息尾巴样式
-            '&::before': isUser ? {
-              content: '""',
-              position: 'absolute',
-              top: 8,
-              right: -8,
-              width: 0,
-              height: 0,
-              borderLeft: '8px solid',
-              borderLeftColor: 'primary.main',
-              borderTop: '8px solid transparent',
-              borderBottom: '8px solid transparent',
-            } : {
-              content: '""',
-              position: 'absolute',
-              top: 8,
-              left: -8,
-              width: 0,
-              height: 0,
-              borderRight: '8px solid',
-              borderRightColor: 'grey.100',
-              borderTop: '8px solid transparent',
-              borderBottom: '8px solid transparent',
-            },
           }}
         >
-          <Typography 
-            variant="body1" 
-            sx={{ 
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              lineHeight: 1.5,
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              backgroundColor: isUser ? 'primary.main' : 'background.paper',
+              color: isUser ? 'primary.contrastText' : 'text.primary',
+              borderRadius: 3,
+              border: isUser ? 'none' : 1,
+              borderColor: 'divider',
+              position: 'relative',
             }}
           >
-            {message.content}
-          </Typography>
-          
-          {/* 流式传输指示器 */}
-          {isStreaming && (
-            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-              <CircularProgress size={16} sx={{ mr: 1 }} />
-              <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                正在输入...
-              </Typography>
-            </Box>
-          )}
-          
-          {/* 时间戳 */}
-          <Typography 
-            variant="caption" 
-            sx={{ 
-              display: 'block',
-              mt: 0.5,
-              opacity: 0.7,
-              fontSize: '0.7rem',
-            }}
-          >
-            {new Date(message.timestamp).toLocaleTimeString('zh-CN', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </Typography>
-
-          {/* 消息操作按钮 */}
-          {showActions && !isStreaming && (
-            <Box
-              sx={{
-                position: 'absolute',
-                top: -8,
-                right: isUser ? -40 : 8,
-                display: 'flex',
-                gap: 0.5,
-                bgcolor: 'background.paper',
-                borderRadius: 1,
-                boxShadow: 1,
-                p: 0.5,
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                lineHeight: 1.6,
               }}
             >
+              {message.content}
+            </Typography>
+            
+            {/* 流式传输指示器 */}
+            {isStreaming && (
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1.5 }}>
+                <CircularProgress size={16} sx={{ mr: 1 }} />
+                <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                  正在输入...
+                </Typography>
+              </Box>
+            )}
+          </Paper>
+
+          {/* 时间戳和操作按钮 */}
+          <Box 
+            sx={{ 
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mt: 1,
+              px: 1,
+            }}
+          >
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: 'text.secondary',
+                fontSize: '0.75rem',
+              }}
+            >
+              {new Date(message.timestamp).toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Typography>
+
+            {/* 消息操作按钮 */}
+            {showActions && !isStreaming && (
               <Tooltip title="复制消息">
-                <IconButton size="small" onClick={handleCopy}>
+                <IconButton 
+                  size="small" 
+                  onClick={handleCopy}
+                  sx={{
+                    opacity: 0.7,
+                    '&:hover': {
+                      opacity: 1,
+                    },
+                  }}
+                >
                   <ContentCopy fontSize="small" />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="更多操作">
-                <IconButton size="small">
-                  <MoreVert fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          )}
-        </Paper>
+            )}
+          </Box>
+        </Box>
 
         {/* 用户头像 */}
         {isUser && (
           <Avatar
             sx={{
               bgcolor: 'secondary.main',
-              width: 32,
-              height: 32,
-              mt: 0.5,
+              width: 36,
+              height: 36,
             }}
           >
             <Person fontSize="small" />

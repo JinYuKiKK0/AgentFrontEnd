@@ -3,129 +3,306 @@ description: 提供关于后端的接口说明和数据模型
 globs: 
 alwaysApply: false
 ---
-# MyAgent - AI Frontend Development Guide
+# API_GUIDE: 前端 API 接口指南
 
-## 项目概述
-MyAgent 是一个基于 Spring Boot + Spring AI 的智能对话应用，主要功能包括：
-- AI智能对话（基于DeepSeek AI）
+本文档定义 AgentFrontEnd 项目的 API 接口规范、类型定义和前端调用示例。
+
+## 1. 项目概述
+
+AgentFrontEnd 与基于 Spring Boot + Spring AI 的后端服务交互，实现：
+- AI智能对话（支持流式响应）
 - 会话管理系统
 - 聊天记录持久化
 
-**核心特性：**
-- 流式AI对话响应
-- 会话上下文记忆
-- 游标分页查询
-- 批量操作支持
+## 2. 类型定义
 
-## 数据模型
-
-### ChatSession（会话）
-定义参考 `[ChatSessionVO.java](mdc:src/main/java/com/jinyu/agent/entity/dto/ChatSessionVO.java)`
+### 会话类型
 ```typescript
+// 基于后端 ChatSessionVO.java
 interface ChatSessionVO {
   conversationId: string;    // 会话ID（主键）
   userId: string;           // 用户ID
   title: string;            // 会话标题
-  createdAt: string;        // 创建时间（ISO格式, e.g., "2023-10-26T10:30:00Z"）
+  createdAt: string;        // 创建时间（ISO格式）
   updatedAt: string;        // 更新时间（ISO格式）
   lastMessage?: string;     // 最后一条消息摘要
 }
+
+// 前端扩展类型
+interface ChatSession extends ChatSessionVO {
+  isActive?: boolean;       // 是否为当前活跃会话
+  messageCount?: number;    // 消息数量
+}
 ```
 
-### API统一响应格式
-定义参考 `[Result.java](mdc:src/main/java/com/jinyu/agent/common/Result.java)`
+### API 响应格式
 ```typescript
-interface ApiResponse<T> {
-  code: number;             // 状态码：200成功，400参数错误，500服务器错误 (参考 `[ResultCode.java](mdc:src/main/java/com/jinyu/agent/common/ResultCode.java)`)
+// 基于后端 Result.java
+interface ApiResponse<T = any> {
+  code: number;             // 状态码：200成功，400参数错误，500服务器错误
   message: string;          // 响应消息
   data: T;                  // 响应数据
 }
+
+// 错误处理类型
+interface ApiError {
+  code: number;
+  message: string;
+  timestamp?: string;
+}
 ```
 
-## API接口列表
-
-主要控制器：`[ChatController.java](mdc:src/main/java/com/jinyu/agent/controller/ChatController.java)` 和 `[ChatSessionController.java](mdc:src/main/java/com/jinyu/agent/controller/ChatSessionController.java)`
-
-### 1. 智能对话接口
-
-**接口：** `GET /ai/chat` (定义于 `[ChatController.java](mdc:src/main/java/com/jinyu/agent/controller/ChatController.java)`)
-
-**用途：** 与AI进行对话，支持流式响应
-
-**请求参数：**
+### 聊天消息类型
 ```typescript
-{
-  prompt: string;     // 用户输入的消息（必填）
+interface ChatMessage {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  timestamp: string;
+  conversationId: string;
+}
+
+// 流式响应类型
+interface StreamResponse {
+  content: string;
+  isComplete: boolean;
+  error?: string;
+}
+```
+
+## 3. API 接口定义
+
+### 智能对话接口
+
+**接口**: `GET /ai/chat`  
+**用途**: 与AI进行对话，支持流式响应
+
+```typescript
+// 请求参数
+interface ChatRequest {
+  prompt: string;     // 用户输入消息（必填）
   chatId: string;     // 会话ID（必填）
 }
+
+// 前端调用示例
+const streamChat = async (request: ChatRequest): Promise<ReadableStream> => {
+  const response = await fetch(`${API_BASE_URL}/ai/chat?${new URLSearchParams(request)}`, {
+    method: 'GET',
+    headers: { 'Accept': 'text/event-stream' }
+  });
+  return response.body!;
+};
+
+// TanStack Query Hook
+const useChatStream = () => {
+  return useMutation({
+    mutationFn: streamChat,
+    onError: (error) => console.error('Chat stream error:', error)
+  });
+};
 ```
 
-**响应格式：** `text/event-stream`
+### 会话管理接口
 
-### 2. 会话管理接口 (定义于 `[ChatSessionController.java](mdc:src/main/java/com/jinyu/agent/controller/ChatSessionController.java)`)
+#### 获取会话列表
+**接口**: `GET /session/list`
 
-#### 2.1 获取会话列表
-
-**接口：** `GET /session/list`
-
-**请求参数：**
 ```typescript
-{
+// 请求参数
+interface SessionListRequest {
   userId: string;                    // 用户ID（必填）
-  lastConversationId?: string;       // 最后一次查询的会话ID（选填，用于分页）
+  lastConversationId?: string;       // 分页游标（选填）
   pageSize?: number;                 // 每页数量（选填，默认10，最大100）
 }
+
+// 前端服务函数
+export const getSessionList = async (params: SessionListRequest): Promise<ChatSessionVO[]> => {
+  const response = await api.get<ChatSessionVO[]>('/session/list', { params });
+  return response.data.data;
+};
+
+// TanStack Query Hook
+export const useSessionList = (params: SessionListRequest) => {
+  return useQuery({
+    queryKey: ['sessions', params],
+    queryFn: () => getSessionList(params),
+    staleTime: 5 * 60 * 1000, // 5分钟缓存
+  });
+};
 ```
 
-**响应数据：** `ApiResponse<ChatSessionVO[]>`
+#### 创建新会话
+**接口**: `POST /session/create`
 
-#### 2.2 创建新会话
-
-**接口：** `POST /session/create`
-
-**请求参数：**
 ```typescript
-{
+// 请求参数
+interface CreateSessionRequest {
   userId: string;      // 用户ID（必填）
   title?: string;      // 会话标题（选填，默认"新的对话"）
 }
+
+// 前端服务函数
+export const createSession = async (request: CreateSessionRequest): Promise<string> => {
+  const response = await api.post<string>('/session/create', request);
+  return response.data.data; // 返回新创建的会话ID
+};
+
+// TanStack Query Hook
+export const useCreateSession = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: createSession,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    },
+  });
+};
 ```
 
-**响应数据：** `ApiResponse<string>` (返回新创建的会话ID `conversationId`)
+#### 删除单个会话
+**接口**: `DELETE /session/delete`
 
-#### 2.3 删除单个会话
-
-**接口：** `DELETE /session/delete`
-
-**请求参数：**
 ```typescript
-{
+// 请求参数
+interface DeleteSessionRequest {
   userId: string;              // 用户ID（必填）
   conversationId: string;      // 会话ID（必填）
   clearChatMemory?: boolean;   // 是否清理聊天记录（选填，默认true）
 }
+
+// 前端服务函数
+export const deleteSession = async (request: DeleteSessionRequest): Promise<boolean> => {
+  const response = await api.delete<boolean>('/session/delete', { params: request });
+  return response.data.data;
+};
+
+// TanStack Query Hook
+export const useDeleteSession = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: deleteSession,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    },
+  });
+};
 ```
 
-**响应数据：** `ApiResponse<boolean>`
+#### 批量删除会话
+**接口**: `DELETE /session/batch-delete`
 
-#### 2.4 批量删除会话
-
-**接口：** `DELETE /session/batch-delete`
-
-**请求参数（Query）：**
 ```typescript
-{
-  userId: string;              // 用户ID（必填）
-  clearChatMemory?: boolean;   // 是否清理聊天记录（选填，默认true）
+// 请求参数
+interface BatchDeleteRequest {
+  userId: string;              // 用户ID（Query参数）
+  clearChatMemory?: boolean;   // 是否清理聊天记录（Query参数）
+  conversationIds: string[];   // 会话ID数组（请求体）
+}
+
+// 前端服务函数
+export const batchDeleteSessions = async (request: BatchDeleteRequest): Promise<number> => {
+  const { conversationIds, ...params } = request;
+  const response = await api.delete<number>('/session/batch-delete', {
+    params,
+    data: conversationIds
+  });
+  return response.data.data; // 返回成功删除的会话数量
+};
+
+// TanStack Query Hook
+export const useBatchDeleteSessions = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: batchDeleteSessions,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    },
+  });
+};
+```
+
+## 4. 前端最佳实践
+
+### 错误处理
+```typescript
+// 统一错误处理 Hook
+export const useApiError = () => {
+  const handleError = (error: any) => {
+    if (error.response?.data?.message) {
+      // 显示业务错误消息
+      console.error('业务错误:', error.response.data.message);
+    } else if (error.message) {
+      // 显示网络错误
+      console.error('网络错误:', error.message);
+    }
+  };
+  
+  return { handleError };
+};
+```
+
+### 数据验证
+```typescript
+// TypeScript 类型守卫
+const validateChatRequest = (request: Partial<ChatRequest>): request is ChatRequest => {
+  return !!(request.prompt?.trim() && request.chatId?.trim());
+};
+
+// 使用示例
+if (!validateChatRequest(requestData)) {
+  throw new Error('请求参数无效');
 }
 ```
 
-**请求体（JSON）：** `string[]` (会话ID数组)
+### 状态管理示例
+```typescript
+// Zustand Store 示例
+interface ChatStore {
+  currentSession: ChatSessionVO | null;
+  messages: ChatMessage[];
+  isLoading: boolean;
+  setCurrentSession: (session: ChatSessionVO) => void;
+  addMessage: (message: ChatMessage) => void;
+}
 
-**响应数据：** `ApiResponse<number>` (返回成功删除的会话数量)
+export const useChatStore = create<ChatStore>((set) => ({
+  currentSession: null,
+  messages: [],
+  isLoading: false,
+  setCurrentSession: (session) => set({ currentSession: session }),
+  addMessage: (message) => set((state) => ({
+    messages: [...state.messages, message]
+  })),
+}));
+```
 
-## 注意事项
-- API文档地址: `http://localhost:8080/doc.html` (由Knife4j生成)
-- 时间格式统一为ISO 8601。
-- `chatId` 和 `conversationId` 均为会话的唯一标识符。
+## 5. 环境配置
+
+### 开发环境
+```env
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+### 生产环境
+```env
+VITE_API_BASE_URL=https://api.yourapp.com
+```
+
+## 6. 调试工具
+
+- **API文档**: `http://localhost:8080/doc.html` (Knife4j生成)
+- **网络监控**: 浏览器开发者工具 Network 面板
+- **TanStack Query DevTools**: 查询状态调试
+
+## 7. 注意事项
+
+1. **时间格式**: 统一使用 ISO 8601 格式
+2. **会话标识**: `chatId` 和 `conversationId` 均为会话唯一标识
+3. **流式响应**: 聊天接口返回 `text/event-stream` 格式
+4. **错误处理**: 区分业务错误（code != 200）和HTTP错误
+5. **缓存策略**: 合理使用 TanStack Query 缓存机制
+6. **类型安全**: 所有API调用都应有完整的TypeScript类型定义
 

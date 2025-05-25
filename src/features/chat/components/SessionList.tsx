@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Box,
-  Paper,
   Typography,
   Button,
   List,
@@ -11,7 +10,6 @@ import {
   IconButton,
   Alert,
   CircularProgress,
-  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -19,7 +17,7 @@ import {
   Chat as ChatIcon,
 } from '@mui/icons-material';
 import { ChatSession } from '../../../types/api';
-import { formatTimestamp, formatMessagePreview } from '../../../utils/formatters';
+import { formatTimestamp } from '../../../utils/formatters';
 
 interface SessionListProps {
   sessions: ChatSession[];
@@ -41,27 +39,28 @@ const SessionList: React.FC<SessionListProps> = ({
   onDeleteSession,
 }) => {
   return (
-    <Paper elevation={2} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* 会话列表头部 */}
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ChatIcon />
-            对话列表
+      <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 500 }}>
+            对话
           </Typography>
-          <Tooltip title="创建新对话">
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<AddIcon />}
-              onClick={onCreateSession}
-              disabled={loading}
-              sx={{ minWidth: 'auto' }}
-            >
-              新对话
-            </Button>
-          </Tooltip>
         </Box>
+        <Button
+          variant="contained"
+          fullWidth
+          startIcon={<AddIcon />}
+          onClick={onCreateSession}
+          disabled={loading}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 500,
+            borderRadius: 2,
+          }}
+        >
+          新对话
+        </Button>
       </Box>
 
       {/* 会话列表内容 */}
@@ -88,20 +87,13 @@ const SessionList: React.FC<SessionListProps> = ({
               height: '100%',
             }}
           >
-            <ChatIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="body1" color="text.secondary" gutterBottom>
+            <ChatIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
+            <Typography variant="body2" color="text.secondary" gutterBottom>
               还没有对话
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              点击"新对话"开始您的第一次聊天
+            <Typography variant="caption" color="text.secondary">
+              点击上方按钮开始新对话
             </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<AddIcon />}
-              onClick={onCreateSession}
-            >
-              创建对话
-            </Button>
           </Box>
         ) : (
           <List sx={{ p: 0 }}>
@@ -111,65 +103,56 @@ const SessionList: React.FC<SessionListProps> = ({
                   selected={selectedSessionId === session.conversationId}
                   onClick={() => onSelectSession(session.conversationId)}
                   sx={{
+                    px: 3,
+                    py: 2,
                     borderRadius: 0,
-                    py: 1.5,
                     '&.Mui-selected': {
-                      backgroundColor: 'primary.light',
-                      color: 'primary.contrastText',
+                      backgroundColor: '#e3f2fd',
+                      borderRight: 3,
+                      borderRightColor: 'primary.main',
                       '&:hover': {
-                        backgroundColor: 'primary.main',
+                        backgroundColor: '#bbdefb',
                       },
+                    },
+                    '&:hover': {
+                      backgroundColor: 'action.hover',
                     },
                   }}
                 >
                   <ListItemText
                     primary={session.title}
                     secondary={
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            maxWidth: '200px',
-                            mb: 0.5,
-                          }}
-                        >
-                          {formatMessagePreview(session.lastMessage || '暂无消息', 30)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatTimestamp(session.updatedAt)}
-                        </Typography>
-                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {formatTimestamp(session.updatedAt)}
+                      </Typography>
                     }
                     primaryTypographyProps={{ 
                       noWrap: true,
-                      fontWeight: selectedSessionId === session.conversationId ? 600 : 400,
+                      fontWeight: selectedSessionId === session.conversationId ? 500 : 400,
+                      fontSize: '0.875rem',
                     }}
+                    sx={{ mr: 1 }}
                   />
-                  <Tooltip title="删除对话">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => onDeleteSession(session.conversationId, e)}
-                      sx={{
-                        opacity: 0.7,
-                        '&:hover': {
-                          opacity: 1,
-                          color: 'error.main',
-                        },
-                      }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => onDeleteSession(session.conversationId, e)}
+                    sx={{
+                      opacity: 0.6,
+                      '&:hover': {
+                        opacity: 1,
+                        color: 'error.main',
+                      },
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
                 </ListItemButton>
               </ListItem>
             ))}
           </List>
         )}
       </Box>
-    </Paper>
+    </Box>
   );
 };
 
