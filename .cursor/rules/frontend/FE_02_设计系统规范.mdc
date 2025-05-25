@@ -1,0 +1,96 @@
+---
+description: 关于前端页面的设计风格，MUI库使用规范以及样式规范
+globs: 
+alwaysApply: false
+---
+# FE_02: 设计系统规范
+
+本文档定义了 AgentFrontEnd 项目的设计系统规范，旨在确保视觉一致性、提升用户体验，并指导开发人员如何有效地结合使用 Material-UI (MUI) 和 Tailwind CSS。
+
+## 1. 设计风格：Material Design
+
+项目的设计风格将严格遵循或高度参考 Google 的 [Material Design](mdc:https:/m3.material.io) 指南。
+
+*   **核心原则**:
+    *   **材质隐喻 (Material is the metaphor)**: 界面元素应具有物理世界的质感和反馈。通过阴影、层级和动画来模拟物理特性。
+    *   **大胆、图形化、有意图 (Bold, graphic, intentional)**: 设计应通过排版、网格、空间、比例、颜色和图像来引导用户，创造有意义的视觉层次。
+    *   **动画赋予意义 (Motion provides meaning)**: 动画应服务于用户体验，提供反馈、引导焦点并增强交互的流畅性。避免不必要或分散注意力的动画。
+*   **MUI 运用**:
+    *   充分利用 MUI 提供的符合 Material Design 的组件，作为构建界面的基础。
+    *   根据项目需求对 MUI 组件进行主题化和定制，以形成独特的品牌视觉和用户体验。重点关注主题中的 `palette` (调色板), `typography` (排版), `spacing` (间距), `shape` (形状) 和 `components` (组件默认样式覆盖)。
+    *   参考 MUI 官方文档中关于 Material Design 实现和组件使用的最佳实践。
+*   **自定义组件**: 如果需要自定义组件，其设计也应符合 Material Design 原则，并考虑其与现有 MUI 组件的协调性。
+
+## 2. MUI 与 Tailwind CSS 协同使用
+
+MUI 作为基础组件库和 Material Design 的实现者，Tailwind CSS 用于快速实现自定义样式、微调布局和响应式设计。
+
+*   **MUI 主题系统**: `src/styles/theme.ts` (或类似路径) 中定义全局 MUI 主题。
+    *   **调色板 (Palette)**: 定义品牌主色、次色、错误色、警告色、成功色等。
+    *   **排版 (Typography)**: 定义不同文本元素 (h1-h6, body1, body2, caption 等) 的字体家族、字重、字号、行高等。
+    *   **间距 (Spacing)**: 定义统一的间距单位 (例如 `theme.spacing(1)` 代表 8px)。
+    *   **形状 (Shape)**: 定义组件的圆角大小。
+    *   **组件覆盖 (Components)**: 为 MUI 组件提供全局的默认样式或 props 覆盖。
+*   **Tailwind CSS 配置**: `tailwind.config.js` (项目根目录)。
+    *   **Content**: 确保 `content` 数组包含所有使用 Tailwind 类名的文件路径 (e.g., `src/**/*.{js,jsx,ts,tsx}`).
+    *   **Theme Extension**: 可以扩展 Tailwind 的默认主题 (颜色、字体、断点等) 以匹配 MUI 主题，从而保持一致性。
+        ```javascript
+        // tailwind.config.js
+        module.exports = {
+          // ...
+          theme: {
+            extend: {
+              colors: {
+                // 示例：从MUI主题同步颜色
+                primary: 'var(--mui-palette-primary-main)',
+                secondary: 'var(--mui-palette-secondary-main)',
+              },
+              // ... 其他扩展
+            },
+          },
+          // ...
+        };
+        ```
+        注意: 上述颜色同步方案需要配合 CSS 变量在 MUI 主题中定义并暴露。
+    *   **集成策略**:
+        1.  **MUI 优先，Tailwind 辅助**: 对于标准组件，优先使用 MUI 的 props (如 `color`, `variant`, `size`) 和 `sx` prop 进行样式调整。`sx` prop 允许直接使用主题中的值，并支持类似 CSS-in-JS 的语法。
+        2.  **Tailwind 用于布局和精细调整**: 使用 Tailwind CSS 的实用类快速实现布局 (Flexbox, Grid)、间距、响应式设计以及 MUI 组件难以直接覆盖或需要高度自定义的细节样式。
+        3.  **避免冲突与优先级管理**:
+            *   **CSS 特异性 (Specificity)**: 理解 MUI 组件生成的类名和 Tailwind 类名的特异性。MUI 的 `styled` API 和 `sx` prop 通常会生成具有较高特异性的样式。
+            *   **Tailwind 前缀**: 可以在 `tailwind.config.js` 中设置 `prefix: 'tw-'`，为所有 Tailwind 类添加前缀，以减少与 MUI 或其他库的类名冲突风险。
+            *   **Tailwind `important` 配置**: 谨慎使用 `important: true` 或 `important: '#root'` (或其他应用根选择器)。如果使用，后者更推荐，因为它将 Tailwind 的高优先级限制在应用内部。过度使用 `!important` 会使样式难以调试和维护。
+*   **全局样式**: 可以在 `src/styles/global.css` (或类似路径) 中定义少量全局样式、CSS 重置 (MUI 已包含 Normalize.css 的变体) 或引入字体文件。
+
+## 3. 色彩 (Color)
+
+*   遵循 MUI 主题中定义的调色板 (`palette`)。
+*   确保色彩对比度符合 WCAG AA 级或更高级别的可访问性标准。
+*   有意义地使用颜色来传递状态和信息 (例如，错误状态使用 error color)。
+
+## 4. 排版 (Typography)
+
+*   遵循 MUI 主题中定义的排版规范 (`typography`)。
+*   保持字体层级的清晰和一致性。
+*   选择易读性高的字体，并确保在不同设备和分辨率下的良好显示效果。
+
+## 5. 布局与间距 (Layout & Spacing)
+
+*   **布局**: 优先使用 MUI 的布局组件 (如 `Grid`, `Stack`, `Box`) 结合 Tailwind CSS 的 Flexbox 和 Grid 工具类进行页面布局。
+*   **间距**: 遵循 MUI 主题中定义的间距单位 (`theme.spacing()`)。在 Tailwind 中可以通过配置 `theme.spacing` 来使其与 MUI 保持一致，或者在需要时直接使用 MUI 的间距。
+*   **响应式设计**: 使用 MUI 的断点系统 (`theme.breakpoints`) 和 Tailwind CSS 的响应式修饰符 (如 `md:`, `lg:`) 来确保应用在不同屏幕尺寸下的良好体验。
+
+## 6. 图标 (Icons)
+
+*   优先使用 [Material Icons](mdc:https:/mui.com/material-ui/material-icons)，MUI 提供了方便的 React 组件包 (`@mui/icons-material`)。
+*   确保图标的表意清晰、一致，并与 Material Design 风格相符。
+*   如果需要自定义图标，应保持与 Material Icons 相似的视觉风格和尺寸。
+
+## 7. 动画与过渡 (Motion)
+
+*   遵循 Material Design 关于动画的核心原则：动画应有意义、响应迅速且自然。
+*   利用 MUI 组件内置的过渡效果 (如 `Collapse`, `Fade`, `Grow`, `Slide`, `Zoom`)。
+*   对于自定义动画，可以使用 CSS 过渡、CSS 动画或 React 动画库 (如 Framer Motion)，并确保其性能。
+
+这些设计规范旨在为项目提供统一的视觉和交互基础。开发团队应熟悉并遵循这些规范。
+
+

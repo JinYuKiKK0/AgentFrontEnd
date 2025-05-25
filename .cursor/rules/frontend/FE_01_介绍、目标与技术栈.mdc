@@ -1,0 +1,60 @@
+---
+description: 关于项目介绍，目标，技术选型
+globs: 
+alwaysApply: false
+---
+# FE_01: 项目目标与技术栈
+
+本文档详细说明了 AgentFrontEnd 项目的前端开发目标、核心原则以及所采用的技术栈。
+
+## 1. 项目介绍，目标与核心原则
+*   **介绍**:
+    *   一个基于OpenAI的ai-chat聊天应用
+*   **目标**:
+    *   构建一个现代化、高性能、可扩展、易于维护的 Agent 前端应用。
+    *   提供优秀的用户体验，界面遵循 Material Design 设计风格。
+    *   确保代码质量和开发效率。
+*   **核心原则**:
+    *   **用户体验优先**: 所有设计和技术决策都应以提升用户体验为首要目标。
+    *   **组件化开发**: 采用模块化和组件化的思想构建可复用的 UI 单元。
+    *   **代码清晰规范**: 编写易于理解、易于测试和易于维护的代码。
+    *   **拥抱变化**: 架构设计应具备一定的灵活性，以适应未来的需求变更和技术演进。
+
+## 2. 技术选型
+
+项目采用现代前端技术栈，以确保开发效率、性能和可维护性。
+
+*   **构建工具**: [Vite](mdc:https:/vitejs.dev) - 提供极速的冷启动和热模块替换 (HMR) 体验。
+    *   *理由*: 开发服务器启动快，HMR 迅速，内置优化，社区活跃。
+*   **核心框架**: [React](mdc:https:/reactjs.org) - 用于构建用户界面的 JavaScript 库。
+    *   **React 版本**: ^18.0.0 (或最新稳定版)
+    *   **Hooks**: 优先使用函数组件和 Hooks，以简化组件逻辑和状态管理。
+    *   *理由*: 强大的生态系统，组件化模型，声明式编程，由 Facebook 支持。
+*   **UI 组件库**: [Material-UI (MUI)](mdc:https:/mui.com) - 实现了 Google Material Design 的 React 组件库。
+    *   提供丰富的预构建组件，加速开发。
+    *   支持深度定制和主题化，以符合项目独特的设计需求。
+    *   *理由*: 完善的 Material Design 实现，组件丰富，文档齐全，社区支持良好。
+*   **CSS 实用工具库**: [Tailwind CSS](mdc:https:/tailwindcss.com) - 一个原子化的 CSS 框架，用于快速构建自定义用户界面。
+    *   与 MUI 结合使用，MUI 负责基础组件和布局，Tailwind CSS 负责精细的样式调整和自定义样式。
+    *   **配置**: 需要配置 Tailwind CSS 与 MUI 的协同工作，避免样式冲突 (参见 `FE_02_设计系统规范.mdc` 中的详细说明)。
+    *   *理由*: 极大地提高了 UI 构建效率，易于实现响应式设计，高度可定制，避免了传统 CSS 的一些痛点。
+*   **语言**: [TypeScript](mdc:https:/www.typescriptlang.org) - JavaScript 的超集，提供静态类型检查。
+    *   *理由*: 增强代码可维护性和可读性，减少运行时错误，提供更好的开发工具支持。
+*   **(可选) 状态管理**: 根据项目复杂度和特性需求，可以考虑以下方案：
+    *   **轻量级/局部**: [Zustand](mdc:https:/github.com/pmndrs/zustand) 或 React Context API。
+        *   *Zustand 优点*: API 简洁，上手快，对 TypeScript 支持良好，性能优秀。
+        *   *Context API 优点*: React 内置，无需额外依赖，适合简单的状态共享。
+    *   **中大型/全局**: [Redux Toolkit](mdc:https:/redux-toolkit.js.org)。
+        *   *优点*: 官方推荐，集成了 Redux 最佳实践，简化了 Redux 的使用，提供了强大的开发工具。
+    *   *选择依据*: 优先使用轻量级方案，当应用状态变得复杂、难以追踪时，再考虑引入 Redux Toolkit。
+*   **(可选) 路由**: [React Router](mdc:https:/reactrouter.com) (`react-router-dom`) - 用于在 React 应用中实现声明式路由。
+    *   *理由*: React 社区标准路由库，功能强大，配置灵活。
+*   **(可选) 数据请求**: 
+    *   [Axios](mdc:https:/axios-http.com): 成熟的基于 Promise 的 HTTP 客户端。
+    *   `fetch` API: 浏览器原生 API。
+    *   配合 [TanStack Query (React Query)](mdc:https:/tanstack.com/query/latest) 或 [SWR](mdc:https:/swr.vercel.app) 进行数据获取、缓存、同步和服务器状态管理。
+        *   *TanStack Query/SWR 优点*: 极大地简化了异步数据处理，提供了缓存、后台更新、乐观更新等高级功能，改善用户体验。
+    *   *选择依据*: 推荐使用 TanStack Query 或 SWR 来管理服务器状态，简化数据流。
+
+技术选型应定期回顾，确保其仍然是项目的最佳选择。
+

@@ -1,0 +1,131 @@
+---
+description: 提供关于后端的接口说明和数据模型
+globs: 
+alwaysApply: false
+---
+# MyAgent - AI Frontend Development Guide
+
+## 项目概述
+MyAgent 是一个基于 Spring Boot + Spring AI 的智能对话应用，主要功能包括：
+- AI智能对话（基于DeepSeek AI）
+- 会话管理系统
+- 聊天记录持久化
+
+**核心特性：**
+- 流式AI对话响应
+- 会话上下文记忆
+- 游标分页查询
+- 批量操作支持
+
+## 数据模型
+
+### ChatSession（会话）
+定义参考 `[ChatSessionVO.java](mdc:src/main/java/com/jinyu/agent/entity/dto/ChatSessionVO.java)`
+```typescript
+interface ChatSessionVO {
+  conversationId: string;    // 会话ID（主键）
+  userId: string;           // 用户ID
+  title: string;            // 会话标题
+  createdAt: string;        // 创建时间（ISO格式, e.g., "2023-10-26T10:30:00Z"）
+  updatedAt: string;        // 更新时间（ISO格式）
+  lastMessage?: string;     // 最后一条消息摘要
+}
+```
+
+### API统一响应格式
+定义参考 `[Result.java](mdc:src/main/java/com/jinyu/agent/common/Result.java)`
+```typescript
+interface ApiResponse<T> {
+  code: number;             // 状态码：200成功，400参数错误，500服务器错误 (参考 `[ResultCode.java](mdc:src/main/java/com/jinyu/agent/common/ResultCode.java)`)
+  message: string;          // 响应消息
+  data: T;                  // 响应数据
+}
+```
+
+## API接口列表
+
+主要控制器：`[ChatController.java](mdc:src/main/java/com/jinyu/agent/controller/ChatController.java)` 和 `[ChatSessionController.java](mdc:src/main/java/com/jinyu/agent/controller/ChatSessionController.java)`
+
+### 1. 智能对话接口
+
+**接口：** `GET /ai/chat` (定义于 `[ChatController.java](mdc:src/main/java/com/jinyu/agent/controller/ChatController.java)`)
+
+**用途：** 与AI进行对话，支持流式响应
+
+**请求参数：**
+```typescript
+{
+  prompt: string;     // 用户输入的消息（必填）
+  chatId: string;     // 会话ID（必填）
+}
+```
+
+**响应格式：** `text/event-stream`
+
+### 2. 会话管理接口 (定义于 `[ChatSessionController.java](mdc:src/main/java/com/jinyu/agent/controller/ChatSessionController.java)`)
+
+#### 2.1 获取会话列表
+
+**接口：** `GET /session/list`
+
+**请求参数：**
+```typescript
+{
+  userId: string;                    // 用户ID（必填）
+  lastConversationId?: string;       // 最后一次查询的会话ID（选填，用于分页）
+  pageSize?: number;                 // 每页数量（选填，默认10，最大100）
+}
+```
+
+**响应数据：** `ApiResponse<ChatSessionVO[]>`
+
+#### 2.2 创建新会话
+
+**接口：** `POST /session/create`
+
+**请求参数：**
+```typescript
+{
+  userId: string;      // 用户ID（必填）
+  title?: string;      // 会话标题（选填，默认"新的对话"）
+}
+```
+
+**响应数据：** `ApiResponse<string>` (返回新创建的会话ID `conversationId`)
+
+#### 2.3 删除单个会话
+
+**接口：** `DELETE /session/delete`
+
+**请求参数：**
+```typescript
+{
+  userId: string;              // 用户ID（必填）
+  conversationId: string;      // 会话ID（必填）
+  clearChatMemory?: boolean;   // 是否清理聊天记录（选填，默认true）
+}
+```
+
+**响应数据：** `ApiResponse<boolean>`
+
+#### 2.4 批量删除会话
+
+**接口：** `DELETE /session/batch-delete`
+
+**请求参数（Query）：**
+```typescript
+{
+  userId: string;              // 用户ID（必填）
+  clearChatMemory?: boolean;   // 是否清理聊天记录（选填，默认true）
+}
+```
+
+**请求体（JSON）：** `string[]` (会话ID数组)
+
+**响应数据：** `ApiResponse<number>` (返回成功删除的会话数量)
+
+## 注意事项
+- API文档地址: `http://localhost:8080/doc.html` (由Knife4j生成)
+- 时间格式统一为ISO 8601。
+- `chatId` 和 `conversationId` 均为会话的唯一标识符。
+

@@ -1,0 +1,28 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 前端开发规范索引
+
+本文档是 AgentFrontEnd 项目前端部分的开发规范、指南和最佳实践的索引。
+
+## 目录
+
+*   **目标与技术栈**: [FE_01_目标与技术栈.mdc](mdc:FE_01_目标与技术栈.mdc)
+    *   项目目标与核心原则
+    *   技术选型详情 (Vite, React, MUI, Tailwind CSS, TypeScript等)
+*   **设计系统规范**: [FE_02_设计系统规范.mdc](mdc:FE_02_设计系统规范.mdc)
+    *   Material Design 设计原则
+    *   MUI 组件库运用与定制
+    *   Tailwind CSS 辅助样式与布局
+    *   色彩、排版、间距、图标规范
+*   **架构设计**: [FE_03_架构设计.mdc](mdc:FE_03_架构设计.mdc)
+    *   项目目录结构
+    *   组件设计原则 (原子化、关注点分离)
+    *   状态管理策略
+    *   API 交互规范
+    *   路由设计
+    *   开发规范 (代码风格, 命名约定, 注释)
+    *   性能优化初步考量
+

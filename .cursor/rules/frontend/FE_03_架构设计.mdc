@@ -1,0 +1,144 @@
+---
+description: 提供前端架构设计及项目结构
+globs: 
+alwaysApply: false
+---
+# FE_03: 架构设计
+
+本文档阐述了 AgentFrontEnd 项目的前端架构设计，包括项目结构、组件设计原则、状态管理策略、API 交互方式、路由配置、开发规范和初步的性能考量。
+
+## 1. 项目结构
+
+推荐采用功能模块化 (Feature-based) 或特性驱动 (Feature-driven) 的目录结构，以提高代码的内聚性和可维护性。
+
+```plaintext
+src/
+|-- assets/               # 静态资源 (图片, 字体, SVG等)
+|-- components/           # 通用、可复用的UI组件 (Presentational Components)
+|   |-- common/           # 基础原子组件 (e.g., Button, Input, Modal, Spinner)
+|   |-- layout/           # 页面布局相关组件 (e.g., Header, Sidebar, Footer, PageWrapper)
+|-- config/               # 应用配置 (环境变量, API端点等)
+|   |-- index.ts
+|   |-- theme.ts            # MUI 主题配置 (也可放在 styles/)
+|-- features/             # 功能模块 (按业务功能划分)
+|   |-- auth/               # 认证模块
+|   |   |-- components/     # 特定于认证功能的组件
+|   |   |-- hooks/          # 特定于认证功能的 Hooks
+|   |   |-- services/       # API 服务调用
+|   |   |-- store/          # 状态管理 (Zustand/Redux slice)
+|   |   |-- types.ts        # 类型定义
+|   |   |-- index.ts        # 模块入口，导出公共接口
+|   |-- chat/               # 聊天模块 (类似结构)
+|   |-- settings/           # 设置模块 (类似结构)
+|-- hooks/                # 通用自定义 Hooks (跨多个功能模块使用)
+|-- layouts/              # 页面级布局模板 (组合 layout/components 中的组件)
+|-- pages/                # 页面级组件 (通常对应一个路由，Container Components)
+|   |-- HomePage.tsx
+|   |-- ChatPage.tsx
+|   |-- LoginPage.tsx
+|-- services/             # 通用API服务层 (基础API客户端配置, 拦截器等)
+|   |-- apiClient.ts
+|-- store/                # 全局状态管理配置 (根 store, reducers, middleware)
+|   |-- index.ts
+|-- styles/               # 全局样式文件
+|   |-- global.css          # 全局 CSS (少量基础样式, 字体引入等)
+|   |-- tailwind.css        # Tailwind CSS 生成的样式 (通常在构建时生成)
+|-- types/                # 全局 TypeScript 类型定义 (共享的类型)
+|   |-- index.d.ts
+|-- utils/                # 通用工具函数 (日期处理, 字符串操作, 验证等)
+|-- App.tsx               # 应用根组件 (路由配置, 全局 Context Provider)
+|-- main.tsx              # 应用入口文件 (渲染 App, 初始化 MUI ThemeProvider等)
+|-- vite-env.d.ts         # Vite 环境变量类型定义
+```
+
+**说明**:
+*   **`components/` vs `features/[feature]/components/`**: `components/` 下存放的是与业务逻辑无关、可在多处复用的纯 UI 组件。`features/` 下的组件是特定于该功能的，可能包含一些与该功能相关的业务逻辑或状态。
+*   模块化: 每个 `features` 目录应尽可能独立，有自己的组件、hooks、服务和状态。
+
+## 2. 组件设计原则
+
+*   **单一职责原则 (SRP)**: 每个组件只做一件事，并把它做好。
+*   **原子化与组合**: 设计可复用的小型原子组件 (如 Button, Input)，然后将它们组合成更复杂的分子组件或有机体组件 (如 Form, Card)。
+*   **关注点分离 (SoC)**:
+    *   **展示组件 (Presentational Components)**: 主要负责 UI 的外观和感觉，通过 props 接收数据和回调函数，通常是无状态的 (或只有 UI 相关的简单状态)。位于 `components/` 目录。
+    *   **容器组件 (Container Components)**: 主要负责逻辑和数据获取，管理状态，并将数据和行为传递给展示组件。通常位于 `pages/` 或 `features/[feature]/components/` (如果该容器组件特定于某个功能)。
+    *   Hooks 被广泛用于抽取和复用组件逻辑，进一步促进关注点分离。
+*   **Props 设计**:
+    *   Props 应清晰、简洁，并提供明确的 TypeScript 类型定义。
+    *   避免过多的 props，考虑使用对象形式的 props 或组合子组件。
+    *   对于回调函数，命名应清晰表达其意图 (e.g., `onInputChange`, `onSubmit`).
+*   **可复用性**: 设计组件时考虑其在不同场景下的复用可能性。
+
+## 3. 状态管理策略
+
+根据状态的作用域和复杂度选择合适的方案：
+
+*   **组件局部状态**: 使用 React 内置的 `useState` 和 `useReducer`。
+    *   适用于仅由单个组件使用或父子组件间简单传递的状态。
+*   **组件树共享状态 (中等范围)**: React Context API。
+    *   适用于在组件树的某个分支中共享数据，避免 prop drilling。
+    *   与 `useReducer` 结合可以管理更复杂的状态逻辑。
+*   **全局或跨特性状态 (复杂)**: [Zustand](mdc:https:/github.com/pmndrs/zustand) 或 [Redux Toolkit](mdc:https:/redux-toolkit.js.org)。
+    *   **Zustand**: 轻量级、API 简洁，适合需要快速上手且对 TypeScript 支持良好的场景。状态组织在 `store/` 或各 `features/[feature]/store/` 中。
+    *   **Redux Toolkit**: 功能更全面，有强大的生态和调试工具，适合大型复杂应用。状态组织在 `store/` (包含根 reducer 和 slices) 或各 `features/[feature]/store/` (feature slices)。
+    *   *选择原则*: 优先考虑使用 React 内置方案和 Zustand。当应用状态变得非常复杂，需要更严格的数据流管理和高级特性 (如时间旅行调试) 时，再考虑 Redux Toolkit。
+*   **服务器状态/缓存**: [TanStack Query (React Query)](mdc:https:/tanstack.com/query/latest) 或 [SWR](mdc:https:/swr.vercel.app)。
+    *   用于管理异步数据获取、缓存、同步和更新。极大地简化了与 API 的交互，并提供了乐观更新、自动重试、分页/无限滚动等功能。
+    *   Hooks (如 `useQuery`, `useMutation`) 通常在 `features/[feature]/hooks/` 或直接在组件内部使用。
+
+## 4. API 交互规范
+
+*   **统一管理**: API 请求逻辑应集中管理。
+    *   **基础客户端**: 在 `src/services/apiClient.ts` (或类似路径) 配置 Axios 实例或封装 `fetch`，包括 baseURL、超时、请求/响应拦截器 (用于错误处理、Token 管理等)。
+    *   **功能服务**: 在各 `features/[feature]/services/` 目录下创建针对特定功能的 API 服务函数，这些函数使用基础客户端实例。
+*   **异步处理**: 使用 `async/await` 处理异步操作。
+*   **类型安全**: 为 API 请求参数和响应数据定义清晰的 TypeScript 类型 (通常在 `features/[feature]/types.ts` 或全局 `types/` 中)。
+*   **错误处理**: 在服务层和调用层进行统一和局部的错误处理。拦截器可以处理通用错误 (如 401, 500)，组件或 Hooks 处理特定于场景的错误并更新 UI。
+*   **数据转换**: 必要时，在服务层对请求或响应数据进行转换，以适应前端数据模型。
+
+## 5. 路由设计
+
+*   使用 [React Router](mdc:https:/reactrouter.com) (`react-router-dom`) 进行声明式路由。
+*   **路由配置**: 集中在 `App.tsx` 或一个专门的路由配置文件中 (e.g., `src/routes.tsx`)。
+*   **页面组件**: 路由指向的页面级组件位于 `src/pages/`。
+*   **布局**: 使用嵌套路由和布局组件 (`src/layouts/`) 实现不同页面共享的 UI 结构 (如导航栏、侧边栏)。
+*   **代码分割/懒加载**: 对页面级组件使用 `React.lazy` 和 `Suspense` 实现路由级别的代码分割，优化初始加载性能。
+    ```tsx
+    // 在路由配置中
+    const ChatPage = React.lazy(() => import('./pages/ChatPage'));
+    // ...
+    <Suspense fallback={<div>Loading...</div>}>
+      <Routes>
+        <Route path="/chat" element={<ChatPage />} />
+      </Routes>
+    </Suspense>
+    ```
+*   **路由守卫/私有路由**: 实现需要认证才能访问的路由。
+
+## 6. 开发规范
+
+*   **代码风格与格式化**: 使用 [Prettier](mdc:https:/prettier.io) 自动格式化代码，确保团队代码风格一致。配置应提交到版本库 (`.prettierrc`, `.prettierignore`)。
+*   **静态检查 (Linting)**: 使用 [ESLint](mdc:https:/eslint.org) 进行代码质量检查和风格约束。
+    *   集成 TypeScript (`@typescript-eslint/parser`, `@typescript-eslint/eslint-plugin`)。
+    *   集成 React specific rules (`eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-jsx-a11y`)。
+    *   配置文件 (`.eslintrc.js` 或 `.eslintrc.json`) 应提交到版本库。
+*   **命名约定**:
+    *   **文件**: `PascalCase.tsx` (组件), `camelCase.ts` (非组件 TS 文件), `kebab-case.css` (CSS 文件)。
+    *   **组件**: PascalCase (`UserProfileCard`).
+    *   **函数/变量**: camelCase (`getUserProfile`, `isLoading`).
+    *   **常量**: SCREAMING_SNAKE_CASE (`MAX_USERS`).
+    *   **类型/接口**: PascalCase (`UserProfile`, `IAuthService`).
+    *   **CSS 类名 (手动编写)**: BEM (Block Element Modifier) 或 kebab-case。
+*   **注释**: 对复杂逻辑、非显而易见的实现、公共 API 和 Hooks 进行清晰、简洁的 JSDoc 或 TSDoc 注释。
+
+## 7. 性能优化初步考量
+
+*   **避免不必要的重渲染**: 使用 `React.memo` 包裹函数组件，结合 `useMemo` 和 `useCallback` 缓存计算结果和函数实例。
+*   **代码分割**: Vite 默认支持基于动态导入的良好代码分割。结合路由懒加载进一步优化。
+*   **图片优化**: 使用合适的图片格式 (WebP, AVIF)，压缩图片，使用 `<img>` 的 `loading="lazy"` 属性。
+*   **虚拟化列表**: 对于长列表数据，使用虚拟化库 (如 `react-window` 或 `react-virtualized`) 来提高渲染性能。
+*   **MUI 性能**: 注意 MUI 组件的渲染开销，避免在列表项中过度使用复杂组件或不必要的 `sx` prop 计算。
+*   **Bundle 分析**: 定期使用 Vite 的构建分析工具 (如 `rollup-plugin-visualizer`)检查打包大小，找出可优化的模块。
+
+此架构设计为项目开发提供了指导框架，并应随着项目的演进和团队的反馈进行调整和完善。
+
