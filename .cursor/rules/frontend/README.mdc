@@ -34,7 +34,7 @@ alwaysApply: true
     *   性能优化策略、错误处理策略
 
 ### API 接口规范
-*   **[API_GUIDE_前端接口指南](mdc:../api_guide_rule.mdc)**
+*   **@API_for_Frontend**
     *   API 接口定义和类型定义
     *   前端调用示例和最佳实践
     *   错误处理和数据验证

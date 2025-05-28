@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "Agent API",
-    "description": "基于SpringBoot + Spring AI的智能助手Agent项目",
+    "title": "AriaVerse API",
+    "description": "基于SpringBoot + Spring AI的智能助手AriaVerse项目",
     "contact": {
       "name": "Jinyu",
       "email": "jinyu067@gmail.com"
@@ -23,10 +23,14 @@
     {
       "name": "会话管理接口",
       "description": "提供会话管理功能的接口"
+    },
+    {
+      "name": "登录注册接口",
+      "description": "提供登录和注册功能的接口"
     }
   ],
   "paths": {
-    "/session/create": {
+    "/api/agent/session/create": {
       "post": {
         "tags": [
           "会话管理接口"
@@ -34,15 +38,6 @@
         "summary": "创建新的聊天会话",
         "operationId": "createChatSession",
         "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "description": "用户ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "title",
             "in": "query",
@@ -67,7 +62,78 @@
         }
       }
     },
-    "/session/list": {
+    "/api/agent/auth/register": {
+      "post": {
+        "tags": [
+          "登录注册接口"
+        ],
+        "summary": "用户注册",
+        "description": "注册新用户",
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/auth/login": {
+      "post": {
+        "tags": [
+          "登录注册接口"
+        ],
+        "summary": "用户登录",
+        "operationId": "login",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "password",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultLoginVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/session/list": {
       "get": {
         "tags": [
           "会话管理接口"
@@ -75,15 +141,6 @@
         "summary": "获取历史会话列表，游标分页",
         "operationId": "listChatSessions",
         "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "description": "用户ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "lastConversationId",
             "in": "query",
@@ -118,7 +175,59 @@
         }
       }
     },
-    "/ai/chat": {
+    "/api/agent/session/history": {
+      "get": {
+        "tags": [
+          "会话聊天消息管理接口"
+        ],
+        "summary": "查询指定会话的聊天记录",
+        "operationId": "getChatHistory",
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "query",
+            "description": "会话ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lastMessageTimeStamp",
+            "in": "query",
+            "description": "最后查询到消息的时间戳",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "单页查询大小",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListChatMessageVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/ai/chat": {
       "get": {
         "tags": [
           "AI聊天接口"
@@ -163,7 +272,7 @@
         }
       }
     },
-    "/session/delete": {
+    "/api/agent/session/delete": {
       "delete": {
         "tags": [
           "会话管理接口"
@@ -171,15 +280,6 @@
         "summary": "删除聊天会话",
         "operationId": "deleteChatSession",
         "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "description": "用户ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "conversationId",
             "in": "query",
@@ -214,7 +314,7 @@
         }
       }
     },
-    "/session/batch-delete": {
+    "/api/agent/session/batch-delete": {
       "delete": {
         "tags": [
           "会话管理接口"
@@ -222,15 +322,6 @@
         "summary": "批量删除聊天会话",
         "operationId": "batchDeleteChatSessions",
         "parameters": [
-          {
-            "name": "userId",
-            "in": "query",
-            "description": "用户ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "name": "clearChatMemory",
             "in": "query",
@@ -288,6 +379,77 @@
           }
         }
       },
+      "RegisterDTO": {
+        "required": [
+          "email",
+          "password",
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "用户邮箱",
+            "example": "user@example.com"
+          },
+          "username": {
+            "type": "string",
+            "description": "用户名",
+            "example": "username"
+          },
+          "password": {
+            "type": "string",
+            "description": "密码",
+            "example": "password123"
+          }
+        },
+        "description": "用户注册数据传输对象"
+      },
+      "Result": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "LoginVO": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "email": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "ResultLoginVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/LoginVO"
+          }
+        }
+      },
       "ChatSessionVO": {
         "type": "object",
         "properties": {
@@ -295,7 +457,8 @@
             "type": "string"
           },
           "userId": {
-            "type": "string"
+            "type": "integer",
+            "format": "int64"
           },
           "title": {
             "type": "string"
@@ -327,6 +490,46 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ChatSessionVO"
+            }
+          }
+        }
+      },
+      "ChatMessageVO": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "conversationId": {
+            "type": "string"
+          },
+          "textContent": {
+            "type": "string"
+          },
+          "messageType": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ResultListChatMessageVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageVO"
             }
           }
         }
