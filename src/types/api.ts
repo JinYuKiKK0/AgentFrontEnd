@@ -12,8 +12,8 @@ export interface ChatRequest {
   message: string;
   conversationId: string;
   userId?: string;
-  prompt?: string;
-  chatId?: string;
+  prompt: string;
+  chatId: string;
 }
 
 export interface ChatSession {
@@ -26,14 +26,15 @@ export interface ChatSession {
 }
 
 export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
+  code: number;      // 状态码，200表示成功，其他表示错误
+  message: string;   // 提示信息
+  data?: T;          // 实际返回的数据
+  // success: boolean; // 根据后端规范，移除 success
+  // error?: string;    // 根据后端规范，移除 error
 }
 
 export interface CreateSessionRequest {
-  title?: string;
+  title: string;
   userId: string;
 }
 

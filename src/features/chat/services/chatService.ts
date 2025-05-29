@@ -21,44 +21,42 @@ export class ChatService {
    * 创建新的聊天会话
    */
   static async createSession(params: CreateSessionRequest): Promise<string> {
-    const response = await api.post<string>('/session/create', null, {
-      params
-    } as any);
-    return response.data.data;
+    const requestBody = params.title;
+    const response = await api.post<string>('/session', requestBody);
+    return response.data.data ?? '';
   }
 
   /**
    * 获取历史会话列表（游标分页）
    */
   static async listSessions(params: ListSessionsRequest): Promise<ChatSession[]> {
-    const response = await api.get<ChatSession[]>('/session/list', {
-      params
-    } as any);
-    return response.data.data;
+    const response = await api.get<ChatSession[]>('/session', { params });
+    return response.data.data ?? [];
   }
 
   /**
    * 删除聊天会话
    */
   static async deleteSession(params: DeleteSessionRequest): Promise<boolean> {
-    const response = await api.delete<boolean>('/session/delete', {
-      params
-    } as any);
-    return response.data.data;
+    const { conversationId, userId, clearChatMemory } = params;
+    const response = await api.delete<boolean>(`/session/${conversationId}`, {
+      params: { clearChatMemory } 
+    });
+    return response.data.data ?? false;
   }
 
   /**
    * 批量删除聊天会话
    */
   static async batchDeleteSessions(
-    params: Omit<BatchDeleteSessionsRequest, 'conversationIds'>,
-    conversationIds: string[]
+    requestPayload: BatchDeleteSessionsRequest
   ): Promise<number> {
+    const { conversationIds, userId, clearChatMemory } = requestPayload;
     const response = await api.delete<number>('/session/batch-delete', {
-      params,
-      data: conversationIds
-    } as any);
-    return response.data.data;
+      params: { clearChatMemory },
+      data: conversationIds 
+    });
+    return response.data.data ?? 0;
   }
 
   /**
@@ -66,14 +64,20 @@ export class ChatService {
    * 返回EventSource实例，调用者需要自行管理连接的生命周期
    */
   static createChatStream(params: ChatRequest): EventSource {
-    const baseURL = apiClient.defaults.baseURL || 'http://localhost:8080';
+    const baseURL = apiClient.defaults.baseURL;
+    if (!baseURL) {
+      throw new Error('API base URL is not configured.');
+    }
     const url = new URL('/ai/chat', baseURL);
+
+    if (params.prompt === undefined || params.chatId === undefined) {
+      throw new Error('Prompt and chatId are required for creating a chat stream.');
+    }
     url.searchParams.append('prompt', params.prompt);
     url.searchParams.append('chatId', params.chatId);
 
-    // 创建EventSource时可以添加配置
     const eventSource = new EventSource(url.toString(), {
-      withCredentials: false // 根据需要设置
+      withCredentials: false
     });
     
     return eventSource;

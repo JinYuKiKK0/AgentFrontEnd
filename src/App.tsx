@@ -7,6 +7,10 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import AppHeader from './components/layout/AppHeader';
 import ChatPage from './pages/ChatPage';
 import SettingsPage from './pages/SettingsPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ProtectedRoute from './components/common/ProtectedRoute';
+import { useAuthStore } from './features/auth/stores/authStore';
 
 const App: React.FC = () => {
   return (
@@ -16,11 +20,19 @@ const App: React.FC = () => {
         <Router>
           <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
             <AppHeader />
-            <Box sx={{ flex: 1, overflow: 'hidden' }}>
+            <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               <Routes>
-                <Route path="/" element={<Navigate to="/chat" replace />} />
-                <Route path="/chat" element={<ChatPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                <Route 
+                  path="/"
+                  element={
+                    <Navigate to={useAuthStore.getState().isAuthenticated ? "/chat" : "/login"} replace />
+                  }
+                />
+                <Route path="*" element={<Navigate to="/login" replace />} />
               </Routes>
             </Box>
           </Box>

@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosRequestConfig } from 'axios';
 import { ApiResponse } from '../types/api';
 
 // API 基础配置
@@ -7,7 +7,7 @@ const API_TIMEOUT = 30000; // 30秒超时
 
 // 创建 Axios 实例
 const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: `${API_BASE_URL}/api/Aria`,
   timeout: API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
@@ -90,18 +90,18 @@ export default apiClient;
 
 // 导出一些常用的请求方法
 export const api = {
-  get: <T = any>(url: string, config?: InternalAxiosRequestConfig) =>
+  get: <T = any>(url: string, config?: AxiosRequestConfig) =>
     apiClient.get<ApiResponse<T>>(url, config),
   
-  post: <T = any>(url: string, data?: any, config?: InternalAxiosRequestConfig) =>
+  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
     apiClient.post<ApiResponse<T>>(url, data, config),
   
-  put: <T = any>(url: string, data?: any, config?: InternalAxiosRequestConfig) =>
+  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
     apiClient.put<ApiResponse<T>>(url, data, config),
   
-  delete: <T = any>(url: string, config?: InternalAxiosRequestConfig) =>
+  delete: <T = any>(url: string, config?: AxiosRequestConfig) =>
     apiClient.delete<ApiResponse<T>>(url, config),
   
-  patch: <T = any>(url: string, data?: any, config?: InternalAxiosRequestConfig) =>
+  patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
     apiClient.patch<ApiResponse<T>>(url, data, config),
 }; 
