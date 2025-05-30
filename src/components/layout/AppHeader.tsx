@@ -61,40 +61,40 @@ const AppHeader: React.FC = () => {
           onClick={() => navigate(isAuthenticated ? '/chat' : '/login')}
         >
           AriaVerse
-        </Typography>
+          </Typography>
 
         {isAuthenticated && user ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Button
-              color={location.pathname === '/chat' ? 'primary' : 'inherit'}
-              startIcon={<Chat />}
-              onClick={() => handleNavigation('/chat')}
-              sx={{
-                textTransform: 'none',
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Button
+            color={location.pathname === '/chat' ? 'primary' : 'inherit'}
+            startIcon={<Chat />}
+            onClick={() => handleNavigation('/chat')}
+            sx={{
+              textTransform: 'none',
                 fontWeight: location.pathname === '/chat' ? 600 : 500,
                 px: 2, py: 1, borderRadius: 2,
                 color: location.pathname === '/chat' ? 'primary.main' : 'text.secondary',
                 bgcolor: location.pathname === '/chat' ? 'primary.light' : 'transparent',
                 '&:hover': { bgcolor: location.pathname === '/chat' ? 'primary.dark' : 'action.hover' },
-              }}
-            >
-              聊天
-            </Button>
-            <Button
-              color={location.pathname === '/settings' ? 'primary' : 'inherit'}
-              startIcon={<Settings />}
-              onClick={() => handleNavigation('/settings')}
-              sx={{
-                textTransform: 'none',
+            }}
+          >
+            聊天
+          </Button>
+          <Button
+            color={location.pathname === '/settings' ? 'primary' : 'inherit'}
+            startIcon={<Settings />}
+            onClick={() => handleNavigation('/settings')}
+            sx={{
+              textTransform: 'none',
                 fontWeight: location.pathname === '/settings' ? 600 : 500,
                 px: 2, py: 1, borderRadius: 2,
                 color: location.pathname === '/settings' ? 'primary.main' : 'text.secondary',
                 bgcolor: location.pathname === '/settings' ? 'primary.light' : 'transparent',
                 '&:hover': { bgcolor: location.pathname === '/settings' ? 'primary.dark' : 'action.hover' },
-              }}
-            >
-              设置
-            </Button>
+            }}
+          >
+            设置
+          </Button>
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, ml: 1 }}>
                 <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
@@ -143,7 +143,7 @@ const AppHeader: React.FC = () => {
             >
               注册
             </Button>
-          </Box>
+        </Box>
         )}
       </Toolbar>
     </AppBar>

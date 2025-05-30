@@ -21,7 +21,7 @@ import MessageBubble from '../features/chat/components/MessageBubble';
 import SessionList from '../features/chat/components/SessionList';
 
 // 临时用户ID，实际项目中应该从认证系统获取
-const TEMP_USER_ID = 'user-123';
+// const TEMP_USER_ID = 'user-123'; // This line is commented out or removed
 
 const ChatPage: React.FC = () => {
   const [inputMessage, setInputMessage] = useState('');
@@ -39,7 +39,7 @@ const ChatPage: React.FC = () => {
     createSession,
     deleteSession,
     loadSessions,
-  } = useChatSessions(TEMP_USER_ID);
+  } = useChatSessions(); // Ensure this call has no arguments
 
   const {
     messages,

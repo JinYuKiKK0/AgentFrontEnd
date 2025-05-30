@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosRequestConfig } from 'axios';
 import { ApiResponse } from '../types/api';
+import { useAuthStore } from '../stores/authStore'; // Import the auth store
 
 // API 基础配置
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
@@ -12,6 +13,7 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 // 请求拦截器
@@ -55,8 +57,14 @@ apiClient.interceptors.response.use(
       switch (status) {
         case 401:
           // 未授权，可能需要重新登录
-          console.error('Unauthorized access');
-          // 可以在这里触发登录流程
+          console.error('Unauthorized access - logging out.');
+          // 检查是否已经在登录页，避免无限循环 (可选，ProtectedRoute 通常会处理)
+          if (window.location.pathname !== '/login') {
+            useAuthStore.getState().clearAuthDetails();
+            // Navigation to /login should be handled by ProtectedRoute
+            // or by a listener on isAuthenticated state if on a public page that needs to react.
+            // For now, clearing auth details is the primary responsibility here.
+          }
           break;
         case 403:
           // 禁止访问

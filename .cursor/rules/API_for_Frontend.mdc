@@ -45,7 +45,7 @@ alwaysApply: false
 
 ### 2.3 聊天会话管理模块 (`/api/Aria/session`)
 
-- **GET `/api/Aria/session`**: 获取历史会话列表 (游标分页)
+- **GET `/api/Aria/session/list`**: 获取历史会话列表 (游标分页)
     - **请求参数**:
         - `lastConversationId` (String, 可选): 上一页最后一条会话的ID，用于游标分页
         - `pageSize` (Integer, 可选): 每页数量，默认为10

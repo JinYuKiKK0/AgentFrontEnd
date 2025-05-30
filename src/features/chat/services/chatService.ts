@@ -30,7 +30,7 @@ export class ChatService {
    * 获取历史会话列表（游标分页）
    */
   static async listSessions(params: ListSessionsRequest): Promise<ChatSession[]> {
-    const response = await api.get<ChatSession[]>('/session', { params });
+    const response = await api.get<ChatSession[]>('/session/list', { params });
     return response.data.data ?? [];
   }
 
@@ -38,7 +38,7 @@ export class ChatService {
    * 删除聊天会话
    */
   static async deleteSession(params: DeleteSessionRequest): Promise<boolean> {
-    const { conversationId, userId, clearChatMemory } = params;
+    const { conversationId, clearChatMemory } = params;
     const response = await api.delete<boolean>(`/session/${conversationId}`, {
       params: { clearChatMemory } 
     });
@@ -51,10 +51,10 @@ export class ChatService {
   static async batchDeleteSessions(
     requestPayload: BatchDeleteSessionsRequest
   ): Promise<number> {
-    const { conversationIds, userId, clearChatMemory } = requestPayload;
+    const { conversationIds, clearChatMemory } = requestPayload;
     const response = await api.delete<number>('/session/batch-delete', {
       params: { clearChatMemory },
-      data: conversationIds 
+      data: conversationIds
     });
     return response.data.data ?? 0;
   }
@@ -64,20 +64,15 @@ export class ChatService {
    * 返回EventSource实例，调用者需要自行管理连接的生命周期
    */
   static createChatStream(params: ChatRequest): EventSource {
-    const baseURL = apiClient.defaults.baseURL;
-    if (!baseURL) {
-      throw new Error('API base URL is not configured.');
-    }
-    const url = new URL('/ai/chat', baseURL);
+    const CHAT_API_HOST = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    const fullChatEndpoint = `${CHAT_API_HOST}/api/Aria/ai/chat`;
+    const url = new URL(fullChatEndpoint);
 
-    if (params.prompt === undefined || params.chatId === undefined) {
-      throw new Error('Prompt and chatId are required for creating a chat stream.');
-    }
     url.searchParams.append('prompt', params.prompt);
-    url.searchParams.append('chatId', params.chatId);
+    url.searchParams.append('conversationId', params.conversationId);
 
     const eventSource = new EventSource(url.toString(), {
-      withCredentials: false
+      withCredentials: true
     });
     
     return eventSource;

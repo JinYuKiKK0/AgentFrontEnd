@@ -6,6 +6,9 @@ import { ChatService } from '../services/chatService';
  * SSE聊天Hook - 使用双重实现策略
  */
 export const useSSEChat = () => {
+  const CHAT_API_HOST = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+  const CHAT_API_ENDPOINT_PATH = '/api/Aria/ai/chat';
+  
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -74,9 +77,10 @@ export const useSSEChat = () => {
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
-      const url = new URL('/ai/chat', 'http://localhost:8080');
+      const fullChatEndpoint = `${CHAT_API_HOST}${CHAT_API_ENDPOINT_PATH}`;
+      const url = new URL(fullChatEndpoint);
       url.searchParams.append('prompt', prompt);
-      url.searchParams.append('chatId', conversationId);
+      url.searchParams.append('conversationId', conversationId);
 
       const response = await fetch(url.toString(), {
         method: 'GET',
@@ -85,6 +89,7 @@ export const useSSEChat = () => {
           'Cache-Control': 'no-cache',
         },
         signal: abortController.signal,
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -205,7 +210,7 @@ export const useSSEChat = () => {
     try {
       const chatRequest: ChatRequest = {
         prompt,
-        chatId: conversationId,
+        conversationId: conversationId,
       };
 
       const eventSource = ChatService.createChatStream(chatRequest);

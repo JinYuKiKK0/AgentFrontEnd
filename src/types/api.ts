@@ -9,11 +9,8 @@ export interface ChatMessage {
 }
 
 export interface ChatRequest {
-  message: string;
-  conversationId: string;
-  userId?: string;
   prompt: string;
-  chatId: string;
+  conversationId: string;
 }
 
 export interface ChatSession {
@@ -35,7 +32,6 @@ export interface ApiResponse<T = any> {
 
 export interface CreateSessionRequest {
   title: string;
-  userId: string;
 }
 
 export interface CreateSessionResponse {
@@ -50,9 +46,6 @@ export interface UpdateSessionRequest {
 }
 
 export interface ListSessionsRequest {
-  userId: string;
-  page?: number;
-  limit?: number;
   lastConversationId?: string;
   pageSize?: number;
 }
@@ -65,7 +58,6 @@ export interface ListSessionsResponse {
 
 export interface DeleteSessionRequest {
   conversationId: string;
-  userId: string;
   clearChatMemory?: boolean;
 }
 
@@ -76,7 +68,6 @@ export interface DeleteSessionResponse {
 
 export interface BatchDeleteSessionsRequest {
   conversationIds: string[];
-  userId: string;
   clearChatMemory?: boolean;
 }
 
