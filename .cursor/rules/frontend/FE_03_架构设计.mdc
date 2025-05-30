@@ -1,0 +1,220 @@
+---
+description: 包含项目结构设计
+globs: 
+alwaysApply: false
+---
+# FE_03: 架构设计
+
+本文档阐述 AgentFrontEnd 项目的前端架构设计，包括项目结构、组件设计原则、状态管理策略、API 交互方式和开发规范。
+
+## 1. 项目结构
+
+基于功能模块化 (Feature-based) 的目录结构：
+
+### 当前项目结构
+```plaintext
+src/
+|-- components/           # 通用可复用组件
+|   |-- common/           # 基础组件 (ErrorBoundary)
+|   |-- layout/           # 布局组件 (AppHeader)
+|-- config/               # 应用配置
+|   |-- theme.ts          # MUI 主题配置
+|-- features/             # 功能模块
+|   |-- chat/             # 聊天模块
+|   |   |-- components/   # SessionList, MessageBubble
+|   |   |-- hooks/        # 聊天相关 Hooks
+|   |   |-- services/     # 聊天 API 服务
+|-- pages/                # 页面组件
+|   |-- ChatPage.tsx
+|   |-- SettingsPage.tsx
+|-- services/             # 通用API服务
+|   |-- apiClient.ts      # API 客户端配置
+|-- types/                # 全局类型定义
+|-- utils/                # 通用工具函数
+|-- App.tsx               # 应用根组件
+|-- main.tsx              # 应用入口
+```
+
+### 组织原则
+- **`components/`**: 业务无关的可复用组件
+- **`features/`**: 按功能模块组织，每个模块相对独立
+- **`pages/`**: 页面级组件，对应路由
+- **模块化**: 每个功能模块有自己的组件、hooks、服务和类型
+
+## 2. 组件设计原则
+
+### 核心原则
+- **单一职责**: 每个组件只负责一个明确的功能
+- **原子化设计**: 从小型原子组件组合成复杂组件
+- **关注点分离**:
+  - **展示组件**: 负责 UI 外观，通过 props 接收数据
+  - **容器组件**: 负责逻辑和数据获取，管理状态
+
+### Props 设计规范
+- 提供明确的 TypeScript 类型定义
+- 避免过多 props，考虑使用对象形式
+- 回调函数命名清晰表达意图 (`onInputChange`, `onSubmit`)
+
+### 当前组件实例
+- **[ErrorBoundary](mdc:src/components/common/ErrorBoundary.tsx)**: 错误边界组件
+- **[AppHeader](mdc:src/components/layout/AppHeader.tsx)**: 应用头部组件
+- **[SessionList](mdc:src/features/chat/components/SessionList.tsx)**: 会话列表组件
+- **[MessageBubble](mdc:src/features/chat/components/MessageBubble.tsx)**: 消息气泡组件
+
+## 3. 状态管理策略
+
+### 状态分层管理
+- **组件局部状态**: 使用 `useState`、`useReducer`
+- **组件树共享**: React Context API + `useReducer`
+- **全局状态**: Zustand v4.4.7
+- **服务器状态**: TanStack Query v5.8.4
+
+### Zustand 使用规范
+```typescript
+// Store 设计示例
+interface ChatStore {
+  currentSession: ChatSessionVO | null;
+  messages: ChatMessage[];
+  isLoading: boolean;
+  setCurrentSession: (session: ChatSessionVO) => void;
+  addMessage: (message: ChatMessage) => void;
+}
+
+export const useChatStore = create<ChatStore>((set) => ({
+  currentSession: null,
+  messages: [],
+  isLoading: false,
+  setCurrentSession: (session) => set({ currentSession: session }),
+  addMessage: (message) => set((state) => ({
+    messages: [...state.messages, message]
+  })),
+}));
+```
+
+### TanStack Query 使用
+- 管理异步数据获取和缓存
+- 提供自动重试、乐观更新等功能
+- Hooks 放在 `features/[feature]/hooks/` 或组件内
+
+## 4. API 交互规范
+
+### 统一管理架构
+- **基础客户端**: [src/services/apiClient.ts](mdc:src/services/apiClient.ts)
+  - Axios 实例配置，包含拦截器
+  - 统一错误处理和业务状态码检查
+  - 环境变量: `VITE_API_BASE_URL`
+
+### API 服务组织
+- **功能服务**: 在 `features/[feature]/services/` 创建特定功能的 API 服务
+- **通用方法**: 使用 `apiClient.ts` 导出的 `api` 对象
+
+### 最佳实践
+- **异步处理**: 使用 `async/await`
+- **类型安全**: 为请求参数和响应数据定义 TypeScript 类型
+- **错误处理**: 拦截器处理通用错误，组件处理特定错误
+- **数据转换**: 必要时在服务层进行数据转换
+
+### API 响应格式
+```typescript
+interface ApiResponse<T = any> {
+  code: number;      // 200成功，400参数错误，500服务器错误
+  message: string;   // 响应消息
+  data: T;          // 响应数据
+}
+```
+
+## 5. 路由设计
+
+### 当前路由配置
+在 [src/App.tsx](mdc:src/App.tsx) 中配置：
+- `/` - 重定向到 `/chat`
+- `/chat` - 聊天页面
+- `/settings` - 设置页面
+
+### 路由组织原则
+- **集中配置**: 路由集中在 `App.tsx`
+- **页面组件**: 路由对应的组件位于 `src/pages/`
+- **错误边界**: ErrorBoundary 包裹整个应用
+- **布局系统**: 使用 MUI Box 组件实现基础布局
+
+### 扩展规划
+- **代码分割**: 使用 `React.lazy` 和 `Suspense`
+- **路由守卫**: 实现认证路由保护
+- **嵌套路由**: 根据功能需要配置
+
+## 6. 开发规范
+
+### 代码风格
+- **格式化**: 使用 Prettier 自动格式化
+- **静态检查**: ESLint 进行代码质量检查
+- **类型检查**: TypeScript 严格模式
+
+### 命名约定
+- **文件**: `PascalCase.tsx` (组件), `camelCase.ts` (非组件)
+- **组件**: PascalCase (`ChatPage`, `MessageBubble`)
+- **函数/变量**: camelCase (`getUserProfile`, `isLoading`)
+- **常量**: SCREAMING_SNAKE_CASE (`API_BASE_URL`)
+- **类型/接口**: PascalCase (`ChatSession`, `ApiResponse`)
+
+### 导入规范
+- 使用 `@` 别名进行模块导入
+- 第三方库导入在前，项目内部导入在后
+- 按字母顺序排列导入
+
+### 注释规范
+- 复杂逻辑进行 JSDoc 注释
+- 组件 Props 接口有清晰注释说明
+- 公共 API 和 Hooks 提供使用示例
+
+## 7. 性能优化策略
+
+### React 优化
+- **避免重渲染**: 使用 `React.memo`、`useMemo`、`useCallback`
+- **组件懒加载**: 路由级代码分割
+- **虚拟化**: 长列表使用虚拟化库
+
+### 构建优化
+- **Bundle 分析**: 使用 Vite 构建分析工具
+- **代码分割**: 动态导入和路由懒加载
+- **缓存策略**: 利用 TanStack Query 缓存机制
+
+### 监控指标
+- 首屏加载时间 (FCP)
+- 最大内容绘制 (LCP)
+- 累积布局偏移 (CLS)
+- Bundle 大小控制
+
+## 8. 错误处理策略
+
+### 错误边界
+- 使用 ErrorBoundary 组件捕获组件树错误
+- 提供友好的错误回退 UI
+- 记录错误信息用于调试
+
+### API 错误处理
+```typescript
+// 统一错误处理 Hook
+export const useApiError = () => {
+  const handleError = (error: any) => {
+    if (error.response?.data?.message) {
+      // 业务错误
+      console.error('业务错误:', error.response.data.message);
+    } else if (error.message) {
+      // 网络错误
+      console.error('网络错误:', error.message);
+    }
+  };
+  return { handleError };
+};
+```
+
+### 数据验证
+```typescript
+// TypeScript 类型守卫
+const validateChatRequest = (request: Partial<ChatRequest>): request is ChatRequest => {
+  return !!(request.prompt?.trim() && request.chatId?.trim());
+};
+```
+
+此架构设计为项目开发提供了清晰的指导框架，确保代码的可维护性和可扩展性。
+

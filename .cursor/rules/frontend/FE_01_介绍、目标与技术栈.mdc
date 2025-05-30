@@ -1,0 +1,97 @@
+---
+description: 关于项目介绍，目标，技术选型
+globs: 
+alwaysApply: false
+---
+# FE_01: 项目目标与技术栈
+
+本文档说明 AgentFrontEnd 项目的目标、核心原则以及技术选型。
+
+## 1. 项目介绍
+
+AgentFrontEnd 是基于 AI 智能对话的前端应用，主要功能：
+- AI智能对话（支持流式响应）
+- 会话管理系统
+- 聊天记录持久化
+- 用户友好的界面设计
+
+## 2. 项目目标
+
+- 构建现代化、高性能、可扩展的 AI 对话前端应用
+- 提供优秀的用户体验，遵循 Material Design 设计风格
+- 确保代码质量和开发效率
+- 支持实时流式对话响应
+
+## 3. 核心原则
+
+- **用户体验优先**: 所有技术决策以提升用户体验为目标
+- **组件化开发**: 采用模块化和组件化构建可复用的 UI 单元
+- **代码清晰规范**: 编写易于理解、测试和维护的代码
+- **拥抱变化**: 架构设计具备灵活性，适应需求变更
+
+## 4. 技术选型
+
+### 构建工具
+- **[Vite](mdc:vite.config.ts)** v4.5.0 - 极速开发服务器和构建工具
+  - 配置路径别名 `@` 指向 `src` 目录
+  - 开发服务器端口 3000
+
+### 核心框架
+- **[React](mdc:src/App.tsx)** v18.2.0 - 用户界面构建库
+  - 优先使用函数组件和 Hooks
+  - 声明式编程模型
+
+### UI 组件库
+- **[Material-UI (MUI)](mdc:src/config/theme.ts)** v5.14.20 - Material Design 组件库
+  - 完整主题系统配置
+  - 支持深度定制
+
+### CSS 框架
+- **[Tailwind CSS](mdc:tailwind.config.js)** v3.3.5 - 原子化 CSS 框架
+  - 与 MUI 协同使用
+  - 快速实现响应式设计
+
+### 开发语言
+- **[TypeScript](mdc:tsconfig.json)** v5.2.2 - 静态类型检查
+  - 严格类型检查配置
+  - 增强代码可维护性
+
+### 状态管理
+- **[Zustand](mdc:package.json)** v4.4.7 - 轻量级状态管理
+  - API 简洁，TypeScript 支持良好
+  - 适合中等复杂度应用
+
+### 路由管理
+- **[React Router](mdc:src/App.tsx)** v6.20.1 - 声明式路由
+  - 已配置基础路由结构
+
+### 数据请求
+- **[Axios](mdc:src/services/apiClient.ts)** v1.6.2 - HTTP 客户端
+  - 统一请求/响应拦截器
+  - 支持错误处理
+
+- **[TanStack Query](mdc:package.json)** v5.8.4 - 服务器状态管理
+  - 数据缓存和同步
+  - 简化异步数据处理
+
+### 图标系统
+- **[MUI Icons](mdc:package.json)** v5.14.19 - Material Design 图标
+  - 与 MUI 组件完美集成
+
+### 开发工具
+- **ESLint** v8.53.0 - 代码质量检查
+  - TypeScript 和 React 规则集成
+
+## 5. 环境配置
+
+### 环境变量
+- `VITE_API_BASE_URL`: API 基础地址，默认 `http://localhost:8080`
+
+### 关键配置文件
+- [vite.config.ts](mdc:vite.config.ts) - 构建配置
+- [tailwind.config.js](mdc:tailwind.config.js) - CSS 框架配置
+- [src/config/theme.ts](mdc:src/config/theme.ts) - MUI 主题配置
+- [tsconfig.json](mdc:tsconfig.json) - TypeScript 配置
+
+技术选型定期评估，确保始终采用最适合项目的技术方案。
+
