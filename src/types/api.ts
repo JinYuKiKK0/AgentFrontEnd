@@ -75,4 +75,18 @@ export interface BatchDeleteSessionsResponse {
   success: boolean;
   deletedCount: number;
   message?: string;
+}
+
+// New Types for Chat History
+export interface ChatMessageVO {
+  conversationId: string;
+  content: string;
+  type: string;
+  timestamp: string;
+}
+
+export interface GetChatHistoryRequest {
+  conversationId: string;
+  lastMessageTimeStamp?: string;
+  pageSize?: number;
 } 

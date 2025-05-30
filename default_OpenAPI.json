@@ -524,22 +524,22 @@
       "ChatMessageVO": {
         "type": "object",
         "properties": {
-          "userId": {
-            "type": "integer",
-            "format": "int64"
-          },
           "conversationId": {
-            "type": "string"
+            "type": "string",
+            "refType": null
           },
-          "textContent": {
-            "type": "string"
+          "content": {
+            "type": "string",
+            "refType": null
           },
-          "messageType": {
-            "type": "string"
+          "type": {
+            "type": "string",
+            "refType": null
           },
           "timestamp": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "refType": null
           }
         }
       },

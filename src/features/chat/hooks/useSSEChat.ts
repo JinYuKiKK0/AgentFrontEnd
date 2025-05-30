@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { ChatMessage, ChatRequest } from '../../../types/api';
+import { ChatMessage, ChatRequest, GetChatHistoryRequest } from '../../../types/api';
 import { ChatService } from '../services/chatService';
+
+const DEFAULT_PAGE_SIZE = 20;
 
 /**
  * SSE聊天Hook - 使用双重实现策略
@@ -12,8 +14,14 @@ export const useSSEChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [sseError, setSseError] = useState<string | null>(null);
   
+  // States for historical message loading
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [hasMoreHistory, setHasMoreHistory] = useState(true);
+  const [newestLoadedTimestamp, setNewestLoadedTimestamp] = useState<string | null>(null);
+
   const eventSourceRef = useRef<EventSource | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const currentConversationIdRef = useRef<string>('');
@@ -25,7 +33,7 @@ export const useSSEChat = () => {
   /**
    * 清理当前的连接
    */
-  const cleanup = useCallback(() => {
+  const cleanupSSE = useCallback(() => {
     // 清除错误延迟处理
     if (errorTimeoutRef.current) {
       clearTimeout(errorTimeoutRef.current);
@@ -55,8 +63,8 @@ export const useSSEChat = () => {
    * 使用fetch + ReadableStream的SSE实现
    */
   const sendMessageWithFetch = useCallback(async (prompt: string, conversationId: string) => {
-    cleanup();
-    setError(null);
+    cleanupSSE();
+    setSseError(null);
     setIsStreaming(true);
     isStreamingRef.current = true;
     streamEndedRef.current = false;
@@ -178,18 +186,18 @@ export const useSSEChat = () => {
       }
       
       console.error('Fetch stream error:', err);
-      setError(err instanceof Error ? err.message : '发送消息失败');
+      setSseError(err instanceof Error ? err.message : '发送消息失败');
       setIsStreaming(false);
       isStreamingRef.current = false;
     }
-  }, [cleanup]);
+  }, [cleanupSSE]);
 
   /**
    * 使用EventSource的SSE实现（备用）
    */
   const sendMessageWithEventSource = useCallback(async (prompt: string, conversationId: string) => {
-    cleanup();
-    setError(null);
+    cleanupSSE();
+    setSseError(null);
     setIsStreaming(true);
     isStreamingRef.current = true;
     streamEndedRef.current = false;
@@ -261,24 +269,24 @@ export const useSSEChat = () => {
         }
         
         // 其他情况才视为真正的错误
-        setError('连接中断，请重试');
+        setSseError('连接中断，请重试');
         setIsStreaming(false);
         isStreamingRef.current = false;
-        cleanup();
+        cleanupSSE();
       };
 
       // 处理连接打开
       eventSource.onopen = () => {
-        setError(null); // 清除之前的错误
+        setSseError(null); // 清除之前的错误
       };
 
     } catch (err) {
       console.error('Send message error:', err);
-      setError(err instanceof Error ? err.message : '发送消息失败');
+      setSseError(err instanceof Error ? err.message : '发送消息失败');
       setIsStreaming(false);
       isStreamingRef.current = false;
     }
-  }, [cleanup]);
+  }, [cleanupSSE]);
 
   /**
    * 主要的发送消息函数 - 优先使用fetch实现
@@ -298,50 +306,117 @@ export const useSSEChat = () => {
    */
   const stopStreaming = useCallback(() => {
     isStreamingRef.current = false;
-    cleanup();
-  }, [cleanup]);
+    cleanupSSE();
+  }, [cleanupSSE]);
 
   /**
    * 清空消息历史
    */
-  const clearMessages = useCallback(() => {
+  const clearChatState = useCallback(() => {
     setMessages([]);
-    setCurrentMessage('');
-    currentMessageRef.current = '';
-    streamEndedRef.current = false;
-  }, []);
+    // SSE related states reset by cleanupSSE
+    cleanupSSE(); 
+    setSseError(null);
+
+    // History related states
+    setIsLoadingHistory(false);
+    setHistoryError(null);
+    setHasMoreHistory(true); // Reset for a new session
+    setNewestLoadedTimestamp(null);
+    // currentConversationIdRef.current = ''; // Cleared when new one is set
+  }, [cleanupSSE]);
 
   /**
    * 加载指定会话的消息历史
    * 注意：这里需要根据实际后端API来实现
    * 目前后端没有提供获取历史消息的接口，所以这里只是一个占位符
    */
-  const loadMessages = useCallback((conversationId: string) => {
-    // TODO: 实现加载历史消息的逻辑
-    // 当后端提供相应API时，在这里调用
-    currentConversationIdRef.current = conversationId;
-    setMessages([]);
-    setCurrentMessage('');
-    currentMessageRef.current = '';
-    streamEndedRef.current = false;
+  const loadMessagesInternal = useCallback(async (conversationId: string, isLoadMore: boolean) => {
+    if (isLoadingHistory) {
+      console.log('loadMessagesInternal: Already loading history, returning.');
+      return;
+    }
+    if (isLoadMore && (!hasMoreHistory || !newestLoadedTimestamp)) {
+      console.log('loadMessagesInternal: No more history or no timestamp for loadMore, returning.');
+      return;
+    }
+
+    console.log(`loadMessagesInternal: Called for ${conversationId}, isLoadMore: ${isLoadMore}`);
+    setIsLoadingHistory(true);
+    setHistoryError(null);
+
+    const requestParams: GetChatHistoryRequest = {
+      conversationId,
+      pageSize: DEFAULT_PAGE_SIZE,
+    };
+
+    if (isLoadMore && newestLoadedTimestamp) {
+      requestParams.lastMessageTimeStamp = newestLoadedTimestamp;
+    }
+
+    try {
+      const newlyFetchedMessages = await ChatService.getChatHistory(requestParams);
+      console.log('loadMessagesInternal: Fetched messages:', newlyFetchedMessages);
+      
+      if (isLoadMore) {
+        setMessages(prev => [...prev, ...newlyFetchedMessages]);
+      } else {
+        setMessages(newlyFetchedMessages);
+      }
+
+      if (newlyFetchedMessages.length > 0) {
+        setNewestLoadedTimestamp(newlyFetchedMessages[newlyFetchedMessages.length - 1].timestamp);
+      }
+      setHasMoreHistory(newlyFetchedMessages.length === DEFAULT_PAGE_SIZE);
+
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : '加载历史消息失败';
+      console.error('loadMessagesInternal: Error:', errorMsg, err);
+      setHistoryError(errorMsg);
+      if (!isLoadMore) setMessages([]); // Clear messages on initial load failure
+    } finally {
+      setIsLoadingHistory(false);
+      console.log('loadMessagesInternal: Finished.');
+    }
   }, []);
+
+  const loadInitialChatMessages = useCallback((conversationId: string) => {
+    console.log(`loadInitialChatMessages: Called for ${conversationId}`);
+    clearChatState();
+    currentConversationIdRef.current = conversationId;
+    loadMessagesInternal(conversationId, false);
+  }, [clearChatState, loadMessagesInternal]);
+
+  const loadMoreChatHistory = useCallback(() => {
+    if (currentConversationIdRef.current) {
+      console.log(`loadMoreChatHistory: Called for ${currentConversationIdRef.current}`);
+      loadMessagesInternal(currentConversationIdRef.current, true);
+    } else {
+      console.warn('loadMoreChatHistory: No currentConversationIdRef.current');
+    }
+  }, [loadMessagesInternal]);
 
   // 组件卸载时清理资源
   useEffect(() => {
     return () => {
-      cleanup();
+      cleanupSSE();
     };
-  }, [cleanup]);
+  }, [cleanupSSE]);
 
   return {
     messages,
     currentMessage,
     isStreaming,
-    error,
+    sseError,
     sendMessage,
     stopStreaming,
-    clearMessages,
-    loadMessages,
+    clearChatState,
+    // History related exports
+    isLoadingHistory,
+    historyError,
+    hasMoreHistory,
+    loadInitialChatMessages,
+    loadMoreChatHistory,
     currentConversationId: currentConversationIdRef.current,
   };
 }; 
